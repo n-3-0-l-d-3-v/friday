@@ -4,8 +4,8 @@ from datetime import date, timedelta
 
 import pytest
 
-from jarvis import analytics as A
-from jarvis import graph_view as GV
+from friday import analytics as A
+from friday import graph_view as GV
 
 TODAY = date(2026, 8, 27)
 
@@ -182,7 +182,7 @@ def test_every_node_has_a_colour(seeded):
 def test_analytics_endpoint(seeded):
     from fastapi.testclient import TestClient
 
-    from jarvis.api_server import app
+    from friday.api_server import app
 
     seeded([_row(0, TODAY)])
     body = TestClient(app).get("/api/analytics").json()

@@ -1,6 +1,6 @@
 """Feature 5: the [[wikilink]] cross-reference engine."""
 
-from jarvis import linker as L
+from friday import linker as L
 
 BASE = {
     "id": "a1", "title": "Sliding Window Basics", "domain": "dsa",

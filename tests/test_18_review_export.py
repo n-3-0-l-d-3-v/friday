@@ -5,8 +5,8 @@ from datetime import date, timedelta
 
 import pytest
 
-from jarvis import exporter as E
-from jarvis import review as R
+from friday import exporter as E
+from friday import review as R
 
 NOTE = ("---\ntitle: Redis Persistence\ndomain: databases\ntype: concept\n---\n"
         "# Redis Persistence\n\nRedis uses RDB snapshots and AOF logs.\n\n"

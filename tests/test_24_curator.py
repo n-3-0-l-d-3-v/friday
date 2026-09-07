@@ -10,7 +10,7 @@ import json
 
 import pytest
 
-from jarvis import curator as C
+from friday import curator as C
 
 
 @pytest.fixture
@@ -73,7 +73,7 @@ def test_review_actions_never_execute_in_a_cycle(repo, monkeypatch):
         called["merged"] = True
         raise AssertionError("destructive action was executed autonomously")
 
-    monkeypatch.setattr("jarvis.dedupe.dedupe", _boom, raising=False)
+    monkeypatch.setattr("friday.dedupe.dedupe", _boom, raising=False)
     monkeypatch.setattr(C, "plan", lambda obs: [
         {"action": "merge_duplicates", "tier": C.REVIEW, "detail": "d"}
     ], raising=False)
@@ -170,12 +170,12 @@ def test_state_survives_corruption(repo):
 
 def test_synthesized_topics_are_remembered(repo, monkeypatch):
     repo([("08-databases", f"n{i}.md", f"Redis {i}", HEALTHY) for i in range(4)])
-    monkeypatch.setattr("jarvis.wiki.synthesize_topic",
+    monkeypatch.setattr("friday.wiki.synthesize_topic",
                         lambda topic, **k: {"count": 3, "used_ai": True,
                                             "path": "p", "sources": [],
                                             "topic": topic, "content": ""},
                         raising=False)
-    monkeypatch.setattr("jarvis.wiki.build_index",
+    monkeypatch.setattr("friday.wiki.build_index",
                         lambda: {"pages": 1, "path": "p"}, raising=False)
     state = {"synthesized": []}
     C.act({"action": "synthesize", "tier": C.SAFE, "topic": "redis",
@@ -201,7 +201,7 @@ def test_observe_reports_a_score(repo):
 def test_act_reports_failure_without_raising(monkeypatch):
     def _boom():
         raise RuntimeError("index exploded")
-    monkeypatch.setattr("jarvis.index_store.dedupe_index", _boom, raising=False)
+    monkeypatch.setattr("friday.index_store.dedupe_index", _boom, raising=False)
     result = C.act({"action": "dedupe_index", "tier": C.SAFE, "detail": "d"}, {})
     assert result["done"] is False
     assert "failed" in result["result"]
@@ -216,7 +216,7 @@ def test_unknown_action_is_handled():
 def test_curate_cli_defaults_to_dry_run(repo):
     from click.testing import CliRunner
 
-    from jarvis import cli as CLI
+    from friday import cli as CLI
 
     sandbox = repo([("08-databases", "a.md", "Redis A", HEALTHY)])
     result = CliRunner().invoke(CLI.cli, ["curate"])

@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="jarvis",
+    name="friday",
     version="0.3.0",
     packages=find_packages(),
     install_requires=[
@@ -18,10 +18,11 @@ setup(
         "mcp>=2.0.0",
         "sounddevice>=0.4.6",
         "numpy>=1.24.0",
+        "pyyaml>=6.0",
     ],
     entry_points={
         "console_scripts": [
-            "jar=jarvis.cli:main",
+            "friday=friday.cli:main",
         ]
     },
 )

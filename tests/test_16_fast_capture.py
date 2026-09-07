@@ -5,9 +5,9 @@ import datetime
 import pytest
 from click.testing import CliRunner
 
-from jarvis import cli as C
-from jarvis import orchestrator as O
-from jarvis.capture import capture_note
+from friday import cli as C
+from friday import orchestrator as O
+from friday.capture import capture_note
 
 runner = CliRunner()
 TODAY = datetime.date.today()
@@ -29,7 +29,7 @@ def test_push_false_commits_locally_but_does_not_push(stub_classifier, monkeypat
         pushed["called"] = True
         return {"pushed": True}
 
-    monkeypatch.setattr("jarvis.git_sync.push_to_remote", fake_push, raising=False)
+    monkeypatch.setattr("friday.git_sync.push_to_remote", fake_push, raising=False)
 
     capture_note("offline capture", source="cli")
     result = O.process_inbox_orchestrated(force=True, push=False)
@@ -48,7 +48,7 @@ def test_push_true_pushes_once_for_the_batch(stub_classifier, monkeypatch, sandb
         push_calls["n"] += 1
         return {"pushed": True}
 
-    monkeypatch.setattr("jarvis.git_sync.push_to_remote", fake_push, raising=False)
+    monkeypatch.setattr("friday.git_sync.push_to_remote", fake_push, raising=False)
 
     # three notes in the inbox -> still only ONE push at the end
     for i in range(3):
@@ -71,7 +71,7 @@ def test_push_true_pushes_once_for_the_batch(stub_classifier, monkeypatch, sandb
 
 def test_local_commit_still_happens_when_push_deferred(stub_classifier, sandbox, clean_index):
     """The note must be committed to git even without a push."""
-    from jarvis.git_sync import get_repo
+    from friday.git_sync import get_repo
 
     capture_note("committed offline", source="cli")
     O.process_inbox_orchestrated(force=True, push=False)
@@ -104,11 +104,11 @@ def test_note_command_accepts_no_push_flag(monkeypatch):
 
 
 def test_push_command_registered_and_runs(monkeypatch):
-    monkeypatch.setattr("jarvis.git_sync.stage_and_commit",
+    monkeypatch.setattr("friday.git_sync.stage_and_commit",
                         lambda msg: {"committed": False}, raising=False)
-    monkeypatch.setattr("jarvis.git_sync.get_status",
+    monkeypatch.setattr("friday.git_sync.get_status",
                         lambda: {"ahead": 2}, raising=False)
-    monkeypatch.setattr("jarvis.git_sync.push_to_remote",
+    monkeypatch.setattr("friday.git_sync.push_to_remote",
                         lambda: {"pushed": True}, raising=False)
     result = runner.invoke(C.cli, ["push"])
     assert result.exit_code == 0

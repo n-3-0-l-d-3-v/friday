@@ -1,10 +1,10 @@
-"""Feature 17: jar doctor (health check) + jar reindex."""
+"""Feature 17: friday doctor (health check) + friday reindex."""
 
 import json
 
 import pytest
 
-from jarvis import health as H
+from friday import health as H
 
 
 @pytest.fixture(autouse=True)
@@ -202,9 +202,84 @@ def test_reindex_skips_wiki_infrastructure(sandbox, clean_index):
     assert not any("index.md" in a["file"] for a in result["added"])
 
 
+def test_reindex_skips_curator_log(sandbox, clean_index):
+    """curator-log.md is the curator's own append-only journal (00-meta/), not
+    a knowledge note. Found live: `friday --health` was reporting it as
+    catalogue drift on the real vault, which reindex would have happily
+    "fixed" by adding a fake note entry for it."""
+    _write(sandbox, "00-meta", "curator-log.md", "# Curator Log\n\n## Cycle 1\n")
+    result = H.reindex()
+    assert not any("curator-log.md" in a["file"] for a in result["added"])
+
+
+def test_curator_log_is_not_untracked(sandbox, write_index):
+    _write(sandbox, "00-meta", "curator-log.md", "# Curator Log\n")
+    write_index([])
+    files = [u["file"] for u in H.check_health()["untracked_files"]]
+    assert not any(f.endswith("curator-log.md") for f in files)
+
+
 def test_reindex_ignores_daily_logs_and_inbox(sandbox, clean_index):
     (sandbox / "daily-logs" / "2026" / "07").mkdir(parents=True, exist_ok=True)
     (sandbox / "daily-logs" / "2026" / "07" / "2026-07-01.md").write_text(
         "# log", encoding="utf-8")
     result = H.reindex()
     assert not any("daily-logs" in a["file"] for a in result["added"])
+
+
+# --- catalogue self-healing: notes added outside `friday note` -------------
+#
+# The historical bug: index.json is maintained incrementally as notes arrive
+# through the normal capture path, so anything that lands another way (manual
+# edit, external import, a file dropped straight into the vault) never gets a
+# row and is invisible to search/ask/graph forever. `friday doctor` and
+# `friday daily` now reconcile the catalogue against disk on every run instead
+# of only reporting the drift and waiting for someone to run `friday reindex`.
+def test_note_added_outside_capture_path_is_reconciled_by_doctor(sandbox, clean_index):
+    """A .md file written directly into the vault (not via `friday note`) is
+    picked up by `friday doctor`'s automatic reconciliation, without anyone
+    running `friday reindex` by hand."""
+    from click.testing import CliRunner
+    from friday import cli as C
+
+    _write(sandbox, "08-databases", "manually-added.md",
+           '---\ntitle: "Manually Added"\ndomain: databases\ntype: concept\n---\n'
+           "# Manually Added\n\nThis note was written straight into the vault "
+           "folder, bypassing `friday note` entirely.\n")
+
+    # Confirm the drift exists before reconciliation.
+    assert any(n["filename"] == "manually-added.md"
+               for n in json.loads(clean_index.read_text(encoding="utf-8"))["notes"]) is False
+
+    result = CliRunner().invoke(C.cli, ["doctor"])
+    assert result.exit_code == 0
+    assert "Reconciled catalogue" in result.output
+
+    notes = json.loads(clean_index.read_text(encoding="utf-8"))["notes"]
+    assert any(n["filename"] == "manually-added.md" for n in notes)
+
+
+def test_note_added_outside_capture_path_is_reconciled_by_daily(sandbox, clean_index):
+    """Same guarantee via `friday daily`, since it reads the same index.json
+    and shouldn't lag behind disk just because the user opened `daily`
+    instead of `doctor`."""
+    from click.testing import CliRunner
+    from friday import cli as C
+
+    _write(sandbox, "08-databases", "found-by-daily.md",
+           '---\ntitle: "Found By Daily"\ndomain: databases\ntype: concept\n---\n'
+           "# Found By Daily\n\nAlso written straight into the vault.\n")
+
+    result = CliRunner().invoke(C.cli, ["daily"])
+    assert result.exit_code == 0
+
+    notes = json.loads(clean_index.read_text(encoding="utf-8"))["notes"]
+    assert any(n["filename"] == "found-by-daily.md" for n in notes)
+
+
+def test_doctor_reports_all_notes_indexed_when_no_drift(sandbox, clean_index):
+    from click.testing import CliRunner
+    from friday import cli as C
+    result = CliRunner().invoke(C.cli, ["doctor"])
+    assert result.exit_code == 0
+    assert "Reconciled catalogue" not in result.output

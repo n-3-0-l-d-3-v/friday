@@ -2,10 +2,10 @@
 
 import pytest
 
-from jarvis import article_fetcher as A
-from jarvis import dsa_agent as DA
-from jarvis import youtube_agent as Y
-from jarvis.leetcode_fetcher import extract_lc_number
+from friday import article_fetcher as A
+from friday import dsa_agent as DA
+from friday import youtube_agent as Y
+from friday.leetcode_fetcher import extract_lc_number
 
 TS = "2026-07-22T12:00:00"
 

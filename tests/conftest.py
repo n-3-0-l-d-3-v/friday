@@ -1,9 +1,9 @@
 """
-Test harness for Jarvis.
+Test harness for Friday.
 
-CRITICAL: jarvis.config binds REPO_PATH at import time, and most modules do
-`from jarvis.config import REPO_PATH`. So JARVIS_REPO_PATH must be pointed at a
-throwaway sandbox *before* any jarvis module is imported. conftest.py is loaded
+CRITICAL: friday.config binds REPO_PATH at import time, and most modules do
+`from friday.config import REPO_PATH`. So FRIDAY_REPO_PATH must be pointed at a
+throwaway sandbox *before* any friday module is imported. conftest.py is loaded
 by pytest before test modules, which makes this the correct place to do it.
 
 Result: the entire pipeline (capture -> classify -> format -> save -> index ->
@@ -21,9 +21,9 @@ from pathlib import Path
 
 import pytest
 
-# --- must happen before any `import jarvis.*` -------------------------------
-SANDBOX = Path(tempfile.mkdtemp(prefix="jarvis_sandbox_"))
-os.environ["JARVIS_REPO_PATH"] = str(SANDBOX)
+# --- must happen before any `import friday.*` -------------------------------
+SANDBOX = Path(tempfile.mkdtemp(prefix="friday_sandbox_"))
+os.environ["FRIDAY_REPO_PATH"] = str(SANDBOX)
 
 _SKELETON = [
     "00-meta",
@@ -51,8 +51,8 @@ def _init_sandbox():
     )
     # git repo so git_sync can commit; deliberately NO remote -> no pushes.
     _git("init", "-q")
-    _git("config", "user.email", "test@jarvis.local")
-    _git("config", "user.name", "Jarvis Test")
+    _git("config", "user.email", "test@friday.local")
+    _git("config", "user.name", "Friday Test")
     _git("add", "-A")
     _git("commit", "-qm", "test: sandbox baseline")
 

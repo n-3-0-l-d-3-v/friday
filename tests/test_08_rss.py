@@ -2,7 +2,7 @@
 
 import json
 
-from jarvis import rss_processor as R
+from friday import rss_processor as R
 
 RSS_XML = b"""<?xml version='1.0'?><rss version='2.0'><channel>
 <item><title>Rust async runtime deep dive</title><link>https://ex.com/rust</link>

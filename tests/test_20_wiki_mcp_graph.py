@@ -4,8 +4,8 @@ import json
 
 import pytest
 
-from jarvis import graph_view as GV
-from jarvis import wiki as W
+from friday import graph_view as GV
+from friday import wiki as W
 
 NOTE_TMPL = ("---\ntitle: {title}\ndomain: {domain}\ntype: concept\n---\n"
              "# {title}\n\n{body}\n\n## Related Topics\n<!-- ph -->\n")
@@ -114,7 +114,7 @@ def test_synthesis_indexes_the_wiki_page(seeded, monkeypatch):
     """The wiki page must itself be indexed so search/ask can surface it."""
     monkeypatch.setattr(W, "_ai", lambda p: "# Redis\n\nsummary", raising=False)
     W.synthesize_topic("redis")
-    from jarvis.index_store import load_index
+    from friday.index_store import load_index
 
     wiki_rows = [n for n in load_index()["notes"] if n.get("type") == "wiki"]
     assert wiki_rows and wiki_rows[0]["folder_path"] == "wiki/topics"
@@ -191,7 +191,7 @@ def test_graph_handles_empty_index(sandbox, write_index):
 def test_mcp_registers_expected_tools():
     import asyncio
 
-    from jarvis.mcp_server import server
+    from friday.mcp_server import server
 
     tools = asyncio.run(server.list_tools())
     names = {t.name for t in tools}
@@ -205,7 +205,7 @@ def test_mcp_registers_expected_tools():
 
 def test_mcp_duplicate_tool_defaults_to_read_only(seeded):
     """find_duplicates must never delete unless explicitly asked."""
-    from jarvis.mcp_server import find_duplicates
+    from friday.mcp_server import find_duplicates
 
     out = find_duplicates()
     assert "dry run" in out.lower() or "no near-duplicate" in out.lower()
@@ -215,7 +215,7 @@ def test_mcp_tools_all_have_descriptions():
     """Descriptions are how the client model decides when to call a tool."""
     import asyncio
 
-    from jarvis.mcp_server import server
+    from friday.mcp_server import server
 
     for tool in asyncio.run(server.list_tools()):
         assert tool.description and len(tool.description) > 30, tool.name
@@ -225,7 +225,7 @@ def test_mcp_quiet_redirects_stdout():
     """stdout belongs to the MCP protocol — library prints must not reach it."""
     import sys
 
-    from jarvis.mcp_server import _quiet
+    from friday.mcp_server import _quiet
 
     original = sys.stdout
     with _quiet():
@@ -234,6 +234,6 @@ def test_mcp_quiet_redirects_stdout():
 
 
 def test_mcp_capture_rejects_empty(seeded):
-    from jarvis.mcp_server import capture_note
+    from friday.mcp_server import capture_note
 
     assert "empty" in capture_note("   ").lower()

@@ -2,8 +2,8 @@
 
 import pytest
 
-from jarvis import dedupe as D
-from jarvis.index_store import load_index
+from friday import dedupe as D
+from friday.index_store import load_index
 
 # Modelled on the real duplicates found in the live repo: the same fact written
 # twice on different days, differing only in phrasing (those scored 74-93%).
@@ -193,7 +193,7 @@ def test_missing_files_are_skipped(pristine_repo, write_index):
 def test_cli_defaults_to_dry_run(repo):
     from click.testing import CliRunner
 
-    from jarvis import cli as C
+    from friday import cli as C
 
     sandbox = repo([
         ("08-databases", "a.md", "Redis Sorted Sets Use Skiplist", BODY_A, "databases"),

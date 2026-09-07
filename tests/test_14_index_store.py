@@ -2,7 +2,7 @@
 
 import json
 
-from jarvis import index_store as IS
+from friday import index_store as IS
 
 
 def _entry(fp, fn, **over):

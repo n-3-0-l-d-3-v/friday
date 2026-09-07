@@ -1,4 +1,4 @@
-# Jarvis — Complete Documentation
+# Friday — Complete Documentation
 
 Two passes over the same system: **Part 1** in plain English, **Part 2** in full
 technical detail.
@@ -10,12 +10,12 @@ Status: Phases 1, 2 and 3 complete. 22 CLI commands, 20 modules, 192 passing tes
 
 # PART 1 — THE SIMPLE EXPLANATION
 
-## What Jarvis actually is
+## What Friday actually is
 
 You learn things all day — a LeetCode problem, a bug you fixed, a YouTube video,
 a blog post. Normally that knowledge evaporates.
 
-Jarvis is a robot librarian. You throw a scrap of text or a link at it, and it:
+Friday is a robot librarian. You throw a scrap of text or a link at it, and it:
 
 1. **Catches it instantly** so you never lose your train of thought
 2. **Figures out what it is** (a DSA problem? a bug? an article?)
@@ -25,7 +25,7 @@ Jarvis is a robot librarian. You throw a scrap of text or a link at it, and it:
 6. **Backs it up to GitHub** automatically
 7. **Writes it into today's diary** so you can see what you learned
 
-You do one thing (`jar note "..."`). It does seven.
+You do one thing (`friday note "..."`). It does seven.
 
 ## The mental model
 
@@ -41,7 +41,7 @@ Think of three boxes:
 
 ### Save something you learned
 ```
-jar note "redis keeps data safe using RDB snapshots and AOF logs"
+friday note "redis keeps data safe using RDB snapshots and AOF logs"
 ```
 It works out this is a databases/Redis concept, writes a full note with Overview /
 Why It Matters / Common Mistakes / Interview Questions sections, files it under
@@ -50,7 +50,7 @@ adds a line to today's diary.
 
 ### Save a LeetCode problem
 ```
-jar note "LC-76 minimum window substring using sliding window"
+friday note "LC-76 minimum window substring using sliding window"
 ```
 It recognises the LeetCode number, **fetches the official problem** from LeetCode
 (title, difficulty, tags, which companies ask it), asks an AI to explain the
@@ -60,7 +60,7 @@ same problem twice updates one file instead of making duplicates.
 
 ### Save a YouTube video
 ```
-jar youtube https://youtube.com/watch?v=...
+friday youtube https://youtube.com/watch?v=...
 ```
 Pulls the title, channel and **auto-generated subtitles**, gets an AI to summarise
 it into key concepts and action items, recognises the creator (Fireship,
@@ -68,31 +68,31 @@ Primeagen, ByteByteGo, NeetCode and ~20 others) and files it under that creator.
 
 ### Save an article
 ```
-jar article https://someblog.com/post
+friday article https://someblog.com/post
 ```
 Uses a free service that turns any webpage into clean text (no browser needed),
 summarises it, and saves it with TLDR and key points.
 
 ### Save from your phone
 ```
-jar discord
+friday discord
 ```
 Starts a Discord bot. Message your private Discord channel from your phone and it
 saves into the same system. Links and text both work.
 
 ### Save from your browser with one click
 ```
-jar serve
+friday serve
 ```
 Opens a dashboard at `http://localhost:7823/dashboard`. Drag the
-**"⚡ Save to Jarvis"** button onto your bookmarks bar. Now on *any* webpage,
+**"⚡ Save to Friday"** button onto your bookmarks bar. Now on *any* webpage,
 click that bookmark → a small dark dialog appears → type a note → Save.
 It knows if you're on YouTube and handles it differently. Works in Zen, Firefox,
 Chrome, and on mobile.
 
 ### Read the tech news for you
 ```
-jar rss
+friday rss
 ```
 Checks Hacker News, TLDR Tech and JavaScript Weekly, uses AI to throw away
 everything irrelevant, and saves brief notes only on things that matter to a
@@ -100,17 +100,17 @@ developer. Won't ever save the same story twice.
 
 ### See what you did
 ```
-jar today        what you learned today
-jar finalize     AI writes a paragraph summarising your day
-jar weekly       AI writes a full week review
-jar status       how many notes you have
-jar dsa          all your LeetCode problems grouped by pattern
-jar graph "redis"   which notes relate to Redis
+friday today        what you learned today
+friday finalize     AI writes a paragraph summarising your day
+friday weekly       AI writes a full week review
+friday status       how many notes you have
+friday dsa          all your LeetCode problems grouped by pattern
+friday graph "redis"   which notes relate to Redis
 ```
 
 ### Set it and forget it
 ```
-jar schedule --rss
+friday schedule --rss
 ```
 Windows then runs the day's summary at 23:59 and the news check at 08:00,
 automatically, forever.
@@ -135,7 +135,7 @@ Jina Reader, Discord, GitHub. No paid APIs and no AI models running on your lapt
 ## Architecture
 
 ```
-                        jar <command>  (Click CLI)
+                        friday <command>  (Click CLI)
                                 │
         ┌───────────────────────┼────────────────────────┐
         │                       │                        │
@@ -241,7 +241,7 @@ space_complexity, companies`).
 tag (max 4) · `+1` same type · `−1` if >180 days older. Threshold `>= 2`, top 5,
 rendered as `- [[filename|Title]]`.
 
-## HTTP API (`jar serve`, port 7823)
+## HTTP API (`friday serve`, port 7823)
 
 | Method | Path | Body | Returns |
 |---|---|---|---|
@@ -269,7 +269,7 @@ into the anchor `href`. Validated as syntactically valid JS via `node --check`.
 On click it captures `location.href`, `document.title` and any selection, detects
 YouTube via regex, injects a fixed-position dark dialog at
 `z-index:2147483647`, and POSTs to the right endpoint — showing `✓ Saved`
-(auto-closing after 2 s), a red error, or a "Is `jar serve` running?" hint if the
+(auto-closing after 2 s), a red error, or a "Is `friday serve` running?" hint if the
 fetch fails. A checkbox switches to saving your note standalone instead of the page.
 
 > Browsers treat `http://localhost` as a secure context, so this works from HTTPS
@@ -298,7 +298,7 @@ Feeds: Hacker News, TLDR Tech, JavaScript Weekly.
 
 `pytest` — **192 tests, 13 files, ~25 s, fully offline.**
 
-`tests/conftest.py` sets `JARVIS_REPO_PATH` to a temp dir **before any jarvis
+`tests/conftest.py` sets `FRIDAY_REPO_PATH` to a temp dir **before any friday
 import** (module-level constants bind at import), then builds a devNote skeleton
 and `git init`s it with **no `origin` remote** — so commits are exercised for real
 while pushes fail gracefully exactly as the code expects. Your real repo is never
@@ -328,7 +328,7 @@ touched and nothing is ever pushed.
    would have duplicated every diary entry had its guard ever matched. Removed;
    the orchestrator is now the single writer.
 3. **DSA misdetection** — `detect_note_type()` only returned `dsa` for
-   `--source leetcode`, so `jar note "LC-1 ... def twoSum()"` was filed as a
+   `--source leetcode`, so `friday note "LC-1 ... def twoSum()"` was filed as a
    *snippet*. Now detects LC numbers and DSA patterns from the text, before the
    snippet check.
 4. **RSS false positives** — substring keyword matching kept "Celebrity **go**ssip".
@@ -336,7 +336,7 @@ touched and nothing is ever pushed.
 5. **Domain corruption** — agent prompts put the instruction inside the value
    (`"domain": "primary domain: dsa|frontend|..."`), so the model echoed it into
    `index.json` (2 live entries affected). Prompts reworded, `normalize_domain()`
-   added to all three agents, and `jar index-clean --fix-domains` added to repair
+   added to all three agents, and `friday index-clean --fix-domains` added to repair
    existing data.
 6. **Bytes.dev** — specified feed doesn't exist; replaced.
 
@@ -351,6 +351,6 @@ touched and nothing is ever pushed.
 
 ## Not yet built (Phases 4-5)
 
-Semantic search over your own notes (`jar ask`), quiz mode, revision scheduling,
+Semantic search over your own notes (`friday ask`), quiz mode, revision scheduling,
 Obsidian graph export, and the analytics dashboard (streaks, velocity,
 interview-readiness scoring).

@@ -2,7 +2,7 @@
 
 import datetime
 
-from jarvis import daily_log as D
+from friday import daily_log as D
 
 DAY = datetime.date(2026, 7, 22)
 
