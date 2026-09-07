@@ -18,6 +18,7 @@ setup(
         "mcp>=2.0.0",
         "sounddevice>=0.4.6",
         "numpy>=1.24.0",
+        "pyyaml>=6.0",
     ],
     entry_points={
         "console_scripts": [

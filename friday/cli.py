@@ -61,9 +61,75 @@ def _extract_summary_from_log(content):
     return "\n".join(lines)
 
 
-@click.group()
-def cli():
+def _build_health_report():
+    """Build the JSON body for `friday --health`.
+
+    This is the ecosystem agent contract's health_check_command (see
+    agent.yaml): version, which AI providers are reachable right now,
+    catalogue health (notes on disk vs. notes in index.json, using the same
+    reconciliation `friday reindex`/`friday doctor` run), the personal-token
+    tier guarantee, and the last capture timestamp.
+    """
+    from friday import __version__
+    from friday.ai import health as ai_health
+    from friday.health import reindex
+    from friday.index_store import load_index
+    from friday.config import assert_personal_token_tier
+
+    ai = ai_health()
+    providers = {
+        name: {"reachable": info["ok"], "model": info.get("model")}
+        for name, info in ai.items() if name != "any"
+    }
+
+    # Dry-run reindex: report drift without mutating the catalogue as a side
+    # effect of a health check.
+    drift = reindex(dry_run=True)
+    index = load_index()
+    notes = index.get("notes", [])
+
+    last_capture = None
+    dates = [n.get("date") for n in notes if n.get("date")]
+    if dates:
+        last_capture = max(dates)
+
+    try:
+        assert_personal_token_tier()
+        tier_ok, tier_error = True, None
+    except RuntimeError as exc:
+        tier_ok, tier_error = False, str(exc)
+
+    return {
+        "version": __version__,
+        "providers": providers,
+        "any_provider_reachable": ai.get("any", False),
+        "catalogue": {
+            "notes_on_disk": drift["scanned"],
+            "notes_in_catalogue": len(notes),
+            "drift": len(drift["added"]),
+        },
+        "personal_token_tier": {
+            "tier": "personal-token",
+            "ok": tier_ok,
+            "error": tier_error,
+        },
+        "last_capture": last_capture,
+    }
+
+
+@click.group(invoke_without_command=True)
+@click.option("--health", "show_health", is_flag=True, default=False,
+              help="Print a JSON health report (version, AI providers, catalogue "
+                   "drift, personal-token tier) and exit. Used by the ecosystem "
+                   "agent contract's health_check_command.")
+@click.pass_context
+def cli(ctx, show_health):
     """Friday CLI"""
+    if show_health:
+        console.print_json(data=_build_health_report())
+        ctx.exit()
+    if ctx.invoked_subcommand is None:
+        click.echo(ctx.get_help())
 
 
 @cli.command()

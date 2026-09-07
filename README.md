@@ -240,6 +240,40 @@ phone on the same network.
 | `index_cleaner.py` | Prune stale `index.json` entries |
 | `cli.py` | All `friday` commands |
 
+## Ecosystem agent contract
+
+Friday is one specialist agent in a wider personal multi-agent ecosystem
+(knowledge capture / docs / writing), alongside other agents with their own
+names and roles — including a separate orchestrator called Jarvis, planned
+independently, which is why this project renamed away from its original name
+to avoid colliding with it. The contract other tooling in that ecosystem
+reads:
+
+- **`agent.yaml`** at the repo root — name, role, sensitivity tier,
+  entrypoint, health check command, vault write path.
+- **`friday --health`** — a JSON report: version, which AI providers are
+  reachable right now, catalogue health (notes on disk vs. notes in
+  `index.json`, via the same reconciliation `reindex`/`doctor`/`daily` run,
+  without mutating anything itself), the personal-token tier guarantee below,
+  and the most recent capture timestamp.
+
+### personal-token tier guarantee
+
+Friday's `default_sensitivity_tier` is `personal-token`: it authenticates to
+Groq and Gemini with **your own** API keys (`GROQ_API_KEY` / `GEMINI_API_KEY`
+in `.env`), never a shared or free-tier credential pool meant for generic
+`work`-tier ecosystem tasks. This is a hard requirement, not a default that
+happens to be true today — Friday reads and writes your personal knowledge
+base, so its provider calls must stay attributable to you alone.
+
+`friday.config.assert_personal_token_tier()` is the guarantee's enforcement
+point: it scans the environment for any credential-shaped variable that looks
+like it belongs to a shared pool (matching `SHARED_POOL`, `WORK_TIER`,
+`FLEET_KEY`, or `POOL_TOKEN` in the name, alongside `GROQ`/`GEMINI`/`FRIDAY`)
+and raises rather than letting Friday silently authenticate through it. Its
+result is surfaced in every `friday --health` report under
+`personal_token_tier`, so a broken guarantee is visible without reading code.
+
 ## Tests
 
 ```bash
@@ -247,7 +281,7 @@ pip install pytest
 pytest
 ```
 
-192 tests cover every module. The suite is **fully sandboxed**: `tests/conftest.py`
+443 tests cover every module. The suite is **fully sandboxed**: `tests/conftest.py`
 points `FRIDAY_REPO_PATH` at a throwaway temp git repo *before* any friday module
 is imported, so the complete pipeline (capture → classify → format → save → index
 → daily log → git commit) runs end to end without ever touching your real devNote

@@ -1,0 +1,7 @@
+name: Friday
+role: knowledge-capture-and-writing
+default_sensitivity_tier: personal-token
+entrypoint: friday
+health_check_command: friday --health
+vault_write_path: vault/Friday/
+sandboxed: false

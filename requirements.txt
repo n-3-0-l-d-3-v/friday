@@ -18,3 +18,8 @@ mcp>=2.0.0
 # Voice capture (friday listen). Optional: without it, --file still works.
 sounddevice>=0.4.6
 numpy>=1.24.0
+
+# Parsing agent.yaml (the ecosystem agent contract) — test-time dependency,
+# already a transitive dep of several packages above but pinned explicitly
+# since it is now imported directly.
+pyyaml>=6.0
