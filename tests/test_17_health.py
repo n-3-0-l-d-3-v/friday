@@ -202,6 +202,23 @@ def test_reindex_skips_wiki_infrastructure(sandbox, clean_index):
     assert not any("index.md" in a["file"] for a in result["added"])
 
 
+def test_reindex_skips_curator_log(sandbox, clean_index):
+    """curator-log.md is the curator's own append-only journal (00-meta/), not
+    a knowledge note. Found live: `friday --health` was reporting it as
+    catalogue drift on the real vault, which reindex would have happily
+    "fixed" by adding a fake note entry for it."""
+    _write(sandbox, "00-meta", "curator-log.md", "# Curator Log\n\n## Cycle 1\n")
+    result = H.reindex()
+    assert not any("curator-log.md" in a["file"] for a in result["added"])
+
+
+def test_curator_log_is_not_untracked(sandbox, write_index):
+    _write(sandbox, "00-meta", "curator-log.md", "# Curator Log\n")
+    write_index([])
+    files = [u["file"] for u in H.check_health()["untracked_files"]]
+    assert not any(f.endswith("curator-log.md") for f in files)
+
+
 def test_reindex_ignores_daily_logs_and_inbox(sandbox, clean_index):
     (sandbox / "daily-logs" / "2026" / "07").mkdir(parents=True, exist_ok=True)
     (sandbox / "daily-logs" / "2026" / "07" / "2026-07-01.md").write_text(

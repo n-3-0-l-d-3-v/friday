@@ -24,10 +24,12 @@ _WIKILINK_RE = re.compile(r"\[\[([^\]|]+)(?:\|[^\]]*)?\]\]")
 _EMPTY_CONTENT_CHARS = 80
 _STALE_DAYS = 90
 
-# Generated or structural markdown that is not a knowledge note: README files
-# and the wiki's own index/log. Counting these as untracked notes produced
-# false "unindexed file" reports, and reindexing them would pollute index.json.
-_NON_NOTE_FILES = {"readme.md", "index.md", "log.md"}
+# Generated or structural markdown that is not a knowledge note: README files,
+# the wiki's own index/log, and the curator's append-only journal. Counting
+# these as untracked notes produced false "unindexed file" reports, and
+# reindexing them would pollute index.json — found live via `friday --health`
+# reporting curator-log.md as catalogue drift on the real vault.
+_NON_NOTE_FILES = {"readme.md", "index.md", "log.md", "curator-log.md"}
 
 
 def _note_path(note):
