@@ -208,3 +208,61 @@ def test_reindex_ignores_daily_logs_and_inbox(sandbox, clean_index):
         "# log", encoding="utf-8")
     result = H.reindex()
     assert not any("daily-logs" in a["file"] for a in result["added"])
+
+
+# --- catalogue self-healing: notes added outside `friday note` -------------
+#
+# The historical bug: index.json is maintained incrementally as notes arrive
+# through the normal capture path, so anything that lands another way (manual
+# edit, external import, a file dropped straight into the vault) never gets a
+# row and is invisible to search/ask/graph forever. `friday doctor` and
+# `friday daily` now reconcile the catalogue against disk on every run instead
+# of only reporting the drift and waiting for someone to run `friday reindex`.
+def test_note_added_outside_capture_path_is_reconciled_by_doctor(sandbox, clean_index):
+    """A .md file written directly into the vault (not via `friday note`) is
+    picked up by `friday doctor`'s automatic reconciliation, without anyone
+    running `friday reindex` by hand."""
+    from click.testing import CliRunner
+    from friday import cli as C
+
+    _write(sandbox, "08-databases", "manually-added.md",
+           '---\ntitle: "Manually Added"\ndomain: databases\ntype: concept\n---\n'
+           "# Manually Added\n\nThis note was written straight into the vault "
+           "folder, bypassing `friday note` entirely.\n")
+
+    # Confirm the drift exists before reconciliation.
+    assert any(n["filename"] == "manually-added.md"
+               for n in json.loads(clean_index.read_text(encoding="utf-8"))["notes"]) is False
+
+    result = CliRunner().invoke(C.cli, ["doctor"])
+    assert result.exit_code == 0
+    assert "Reconciled catalogue" in result.output
+
+    notes = json.loads(clean_index.read_text(encoding="utf-8"))["notes"]
+    assert any(n["filename"] == "manually-added.md" for n in notes)
+
+
+def test_note_added_outside_capture_path_is_reconciled_by_daily(sandbox, clean_index):
+    """Same guarantee via `friday daily`, since it reads the same index.json
+    and shouldn't lag behind disk just because the user opened `daily`
+    instead of `doctor`."""
+    from click.testing import CliRunner
+    from friday import cli as C
+
+    _write(sandbox, "08-databases", "found-by-daily.md",
+           '---\ntitle: "Found By Daily"\ndomain: databases\ntype: concept\n---\n'
+           "# Found By Daily\n\nAlso written straight into the vault.\n")
+
+    result = CliRunner().invoke(C.cli, ["daily"])
+    assert result.exit_code == 0
+
+    notes = json.loads(clean_index.read_text(encoding="utf-8"))["notes"]
+    assert any(n["filename"] == "found-by-daily.md" for n in notes)
+
+
+def test_doctor_reports_all_notes_indexed_when_no_drift(sandbox, clean_index):
+    from click.testing import CliRunner
+    from friday import cli as C
+    result = CliRunner().invoke(C.cli, ["doctor"])
+    assert result.exit_code == 0
+    assert "Reconciled catalogue" not in result.output

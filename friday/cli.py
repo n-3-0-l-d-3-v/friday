@@ -721,6 +721,16 @@ def dedupe_cmd(threshold, apply_changes, no_archive):
 def daily_cmd(date_value):
     """Your morning briefing: yesterday, what's due, and one next action."""
     from friday.briefing import build_briefing
+    from friday.health import reindex
+
+    # Self-healing catalogue reconciliation (see `friday doctor`): run quietly
+    # here too, since the briefing's counts and "yesterday" list are read from
+    # the same index.json, and it should never lag behind what's on disk just
+    # because the user opens with `daily` instead of `doctor`.
+    try:
+        reindex(dry_run=False)
+    except Exception:
+        pass
 
     target = _parse_date_value(date_value) if date_value else None
     b = build_briefing(target_date=target)
@@ -1031,9 +1041,23 @@ def open_cmd(query):
 @click.option("--stale-days", default=90, type=int, help="Age before a note counts as stale")
 def doctor_cmd(details, stale_days):
     """Health-check your knowledge base and report what needs fixing."""
-    from friday.health import check_health, health_score, summarize
+    from friday.health import check_health, health_score, summarize, reindex
 
     console.print("[dim]Scanning knowledge base...[/dim]\n")
+
+    # Self-healing catalogue: notes can land in the vault outside the normal
+    # capture path (manual edit, external import, a file dropped in directly)
+    # and never get an index.json row. Rather than only ever reporting that
+    # drift as "untracked files" and waiting for someone to run `friday
+    # reindex` by hand, doctor reconciles the catalogue against what is
+    # actually on disk on every run, then reports on the result.
+    reconciled = reindex(dry_run=False)
+    if reconciled["added"]:
+        console.print(
+            f"[cyan]Reconciled catalogue:[/cyan] added {len(reconciled['added'])} "
+            f"note(s) found on disk but missing from the index.\n"
+        )
+
     findings = check_health(stale_days=stale_days)
     score = health_score(findings)
 

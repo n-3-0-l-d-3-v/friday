@@ -145,6 +145,15 @@ the loop picks up where the last one stopped.
 | `friday doctor --details` | List the actual offending files |
 | `friday reindex` | Re-add notes that exist on disk but fell out of `index.json` (they're invisible to search until you do) |
 
+The catalogue is **self-healing**: `index.json` is maintained incrementally as
+notes arrive through `friday note`, so anything that lands another way (manual
+edit, external import, a file dropped straight into the vault folder) never
+gets a row on its own. Rather than trust the incremental updates alone, both
+`friday doctor` and `friday daily` run the same reconciliation as `friday
+reindex` automatically on every invocation — scanning the vault on disk and
+adding whatever's missing — so the catalogue never drifts far from reality
+even if you never run `reindex` by hand.
+
 `friday note` auto-detects YouTube and article URLs and routes them accordingly.
 
 ### Daily logs & reviews
