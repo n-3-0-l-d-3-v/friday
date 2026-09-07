@@ -27,7 +27,7 @@ def test_daily_log_task_uses_correct_name_and_time(monkeypatch):
     captured = _capture_cmd(monkeypatch)
     S.setup_scheduler()
     cmd = captured["cmd"]
-    assert "JarvisDailyLog" in cmd
+    assert "FridayDailyLog" in cmd
     assert "23:59" in cmd
     assert "daily" in cmd
     assert any("friday.tasks finalize" in str(part) for part in cmd)
@@ -37,7 +37,7 @@ def test_rss_task_uses_correct_name_and_default_time(monkeypatch):
     captured = _capture_cmd(monkeypatch)
     S.setup_rss_scheduler()
     cmd = captured["cmd"]
-    assert "JarvisRSS" in cmd
+    assert "FridayRSS" in cmd
     assert "08:00" in cmd
     assert any("friday.tasks rss" in str(part) for part in cmd)
 
@@ -97,7 +97,7 @@ def test_curator_task_scheduled_at_night(monkeypatch):
     captured = _capture_cmd(monkeypatch)
     S.setup_curator_scheduler()
     cmd = captured["cmd"]
-    assert "JarvisCurator" in cmd
+    assert "FridayCurator" in cmd
     assert "03:00" in cmd
     assert any("friday.tasks curate" in str(part) for part in cmd)
 

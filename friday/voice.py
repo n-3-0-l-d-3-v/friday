@@ -39,7 +39,7 @@ def record_fixed(seconds, sample_rate=SAMPLE_RATE):
     audio = sd.rec(int(seconds * sample_rate), samplerate=sample_rate,
                    channels=CHANNELS, dtype="int16")
     sd.wait()
-    path = Path(tempfile.gettempdir()) / "jarvis_voice.wav"
+    path = Path(tempfile.gettempdir()) / "friday_voice.wav"
     _write_wav(path, [np.asarray(audio, dtype="int16").tobytes()], sample_rate)
     return path
 
@@ -70,7 +70,7 @@ def record_until(stop_check, sample_rate=SAMPLE_RATE, max_seconds=300):
             except queue.Empty:
                 continue
 
-    path = Path(tempfile.gettempdir()) / "jarvis_voice.wav"
+    path = Path(tempfile.gettempdir()) / "friday_voice.wav"
     _write_wav(path, frames, sample_rate)
     return path
 

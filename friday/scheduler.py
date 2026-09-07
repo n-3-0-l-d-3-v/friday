@@ -36,12 +36,12 @@ def _create_task(task_name, task_arg, run_time):
 
 def setup_scheduler():
     """Daily log finalizer at 23:59."""
-    return _create_task("JarvisDailyLog", "finalize", "23:59")
+    return _create_task("FridayDailyLog", "finalize", "23:59")
 
 
 def setup_rss_scheduler(run_time="08:00"):
     """Daily RSS feed processor (default 08:00)."""
-    return _create_task("JarvisRSS", "rss", run_time)
+    return _create_task("FridayRSS", "rss", run_time)
 
 
 def setup_curator_scheduler(run_time="03:00"):
@@ -51,4 +51,4 @@ def setup_curator_scheduler(run_time="03:00"):
     rewrite wiki pages; there is no reason for that to compete with you
     actually using the machine.
     """
-    return _create_task("JarvisCurator", "curate", run_time)
+    return _create_task("FridayCurator", "curate", run_time)

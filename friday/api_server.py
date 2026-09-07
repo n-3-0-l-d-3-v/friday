@@ -610,7 +610,7 @@ _DASHBOARD_HTML = r"""<!doctype html>
   document.getElementById('go').onclick=search;
   document.getElementById('askbtn').onclick=ask;
   q.addEventListener('keydown',function(e){if(e.key==='Enter'){search();}});
-  window.__jarvisSearch=function(v){q.value=v;search();};
+  window.__fridaySearch=function(v){q.value=v;search();};
 })();
 
 /* ---- Learning analytics -------------------------------------------------
@@ -829,7 +829,7 @@ _DASHBOARD_HTML = r"""<!doctype html>
   });
   cv.addEventListener('click',function(ev){
     var h=at(ev.offsetX,ev.offsetY);
-    if(h && window.__jarvisSearch){ window.__jarvisSearch(h.title); }
+    if(h && window.__fridaySearch){ window.__fridaySearch(h.title); }
   });
   cv.addEventListener('wheel',function(ev){
     ev.preventDefault();
