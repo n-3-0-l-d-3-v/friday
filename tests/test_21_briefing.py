@@ -4,7 +4,7 @@ from datetime import date, timedelta
 
 import pytest
 
-from jarvis import briefing as B
+from friday import briefing as B
 
 TODAY = date(2026, 8, 27)
 
@@ -129,7 +129,7 @@ def test_briefing_deduplicates_index_rows(pristine_repo, write_index):
 def test_daily_command_runs(seeded):
     from click.testing import CliRunner
 
-    from jarvis import cli as C
+    from friday import cli as C
 
     result = CliRunner().invoke(C.cli, ["daily"])
     assert result.exit_code == 0, result.output
@@ -139,7 +139,7 @@ def test_daily_command_runs(seeded):
 def test_mcp_exposes_daily_briefing():
     import asyncio
 
-    from jarvis.mcp_server import server
+    from friday.mcp_server import server
 
     names = {t.name for t in asyncio.run(server.list_tools())}
     assert "daily_briefing" in names

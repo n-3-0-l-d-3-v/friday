@@ -1,4 +1,4 @@
-# Jarvis Knowledge OS — runtime dependencies
+# Friday Knowledge OS — runtime dependencies
 # Install with:  pip install -r requirements.txt   (or: pip install -e .)
 
 click>=8.1.0
@@ -12,9 +12,9 @@ uvicorn>=0.29.0
 youtube-transcript-api>=0.6.2
 discord.py>=2.3.0
 
-# MCP server — exposes Jarvis as a tool to Claude Desktop / Claude Code
+# MCP server — exposes Friday as a tool to Claude Desktop / Claude Code
 mcp>=2.0.0
 
-# Voice capture (jar listen). Optional: without it, --file still works.
+# Voice capture (friday listen). Optional: without it, --file still works.
 sounddevice>=0.4.6
 numpy>=1.24.0

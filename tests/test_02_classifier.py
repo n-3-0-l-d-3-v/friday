@@ -2,7 +2,7 @@
 
 import pytest
 
-from jarvis import classifier as C
+from friday import classifier as C
 
 
 # --- JSON extraction -------------------------------------------------------

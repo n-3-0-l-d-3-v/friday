@@ -2,8 +2,8 @@
 
 import subprocess
 
-from jarvis import scheduler as S
-from jarvis import tasks as T
+from friday import scheduler as S
+from friday import tasks as T
 
 
 class _Result:
@@ -30,7 +30,7 @@ def test_daily_log_task_uses_correct_name_and_time(monkeypatch):
     assert "JarvisDailyLog" in cmd
     assert "23:59" in cmd
     assert "daily" in cmd
-    assert any("jarvis.tasks finalize" in str(part) for part in cmd)
+    assert any("friday.tasks finalize" in str(part) for part in cmd)
 
 
 def test_rss_task_uses_correct_name_and_default_time(monkeypatch):
@@ -39,7 +39,7 @@ def test_rss_task_uses_correct_name_and_default_time(monkeypatch):
     cmd = captured["cmd"]
     assert "JarvisRSS" in cmd
     assert "08:00" in cmd
-    assert any("jarvis.tasks rss" in str(part) for part in cmd)
+    assert any("friday.tasks rss" in str(part) for part in cmd)
 
 
 def test_rss_task_accepts_custom_time(monkeypatch):
@@ -76,7 +76,7 @@ def test_tasks_routes_finalize(monkeypatch, capsys):
 
 
 def test_tasks_routes_rss(monkeypatch, capsys):
-    import jarvis.rss_processor as R
+    import friday.rss_processor as R
     monkeypatch.setattr("sys.argv", ["tasks", "rss"])
     monkeypatch.setattr(R, "process_feeds",
                         lambda: {"fetched": 10, "new": 3, "saved": 1},
@@ -99,11 +99,11 @@ def test_curator_task_scheduled_at_night(monkeypatch):
     cmd = captured["cmd"]
     assert "JarvisCurator" in cmd
     assert "03:00" in cmd
-    assert any("jarvis.tasks curate" in str(part) for part in cmd)
+    assert any("friday.tasks curate" in str(part) for part in cmd)
 
 
 def test_tasks_routes_curate(monkeypatch, capsys):
-    import jarvis.curator as CUR
+    import friday.curator as CUR
     monkeypatch.setattr("sys.argv", ["tasks", "curate"])
     monkeypatch.setattr(
         CUR, "run_cycle",

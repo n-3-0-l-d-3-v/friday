@@ -1,8 +1,8 @@
-"""Feature 15: retrieval layer — jar search + jar ask."""
+"""Feature 15: retrieval layer — friday search + friday ask."""
 
 import pytest
 
-from jarvis import retrieval as R
+from friday import retrieval as R
 
 
 @pytest.fixture
@@ -125,8 +125,8 @@ def test_ask_prompt_only_includes_found_notes(seeded_repo, monkeypatch):
 
 
 def test_ai_complete_delegates_to_central_client(monkeypatch):
-    """Retrieval must go through jarvis.ai so model fallback applies."""
-    import jarvis.ai as AI
+    """Retrieval must go through friday.ai so model fallback applies."""
+    import friday.ai as AI
     monkeypatch.setattr(AI, "complete",
                         lambda prompt, max_tokens=1200, temperature=0.2, prefer=None:
                         "central answer",
@@ -136,14 +136,14 @@ def test_ai_complete_delegates_to_central_client(monkeypatch):
 
 def test_ai_client_falls_back_between_providers(monkeypatch):
     """The provider ladder itself: a dead primary must fall through."""
-    import jarvis.ai as AI
+    import friday.ai as AI
     monkeypatch.setattr(AI, "_try_groq", lambda p, m, t: None, raising=False)
     monkeypatch.setattr(AI, "_try_gemini", lambda p, m, t: "gemini answer", raising=False)
     assert AI.complete("q", prefer="groq") == "gemini answer"
 
 
 def test_ai_client_returns_none_when_all_models_fail(monkeypatch):
-    import jarvis.ai as AI
+    import friday.ai as AI
     monkeypatch.setattr(AI, "_try_groq", lambda p, m, t: None, raising=False)
     monkeypatch.setattr(AI, "_try_gemini", lambda p, m, t: None, raising=False)
     assert AI.complete("q") is None

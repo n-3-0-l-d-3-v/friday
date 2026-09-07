@@ -2,7 +2,7 @@
 
 import pytest
 
-from jarvis.formatter import (
+from friday.formatter import (
     build_frontmatter,
     format_article,
     format_bug,
@@ -135,7 +135,7 @@ def test_lean_dsa_keeps_useful_structure():
 
 def test_format_note_respects_config_default(monkeypatch):
     """With no explicit flag, format_note follows config.LEAN_NOTES."""
-    import jarvis.config as cfg
+    import friday.config as cfg
     monkeypatch.setattr(cfg, "LEAN_NOTES", True, raising=False)
     assert "## Why It Matters" not in format_note("b", CLS, "cli", "", TS)
     monkeypatch.setattr(cfg, "LEAN_NOTES", False, raising=False)

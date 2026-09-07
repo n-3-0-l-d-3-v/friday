@@ -9,8 +9,8 @@ import json
 
 import pytest
 
-from jarvis.classifier import normalize_domain
-from jarvis.index_cleaner import fix_domains
+from friday.classifier import normalize_domain
+from friday.index_cleaner import fix_domains
 
 
 @pytest.mark.parametrize("raw,expected", [
@@ -62,8 +62,8 @@ def test_fix_domains_is_noop_when_clean(write_index):
 
 def test_agents_normalize_domain_on_parse(monkeypatch):
     """The article agent must scrub domain AND subdomain before indexing."""
-    import jarvis.ai as AI
-    import jarvis.article_fetcher as A
+    import friday.ai as AI
+    import friday.article_fetcher as A
 
     monkeypatch.setattr(A, "GROQ_API_KEY", "fake-key", raising=False)
     monkeypatch.setattr(
@@ -84,7 +84,7 @@ def test_agents_normalize_domain_on_parse(monkeypatch):
 
 
 def test_subdomain_normalization_repairs_index(write_index):
-    """jar index-clean --fix-domains must also repair leaked subdomains."""
+    """friday index-clean --fix-domains must also repair leaked subdomains."""
     index_path = write_index([
         {"id": "1", "title": "A", "domain": "databases",
          "subdomain": "specific technology: redis"},

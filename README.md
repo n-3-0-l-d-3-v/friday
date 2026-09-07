@@ -1,6 +1,6 @@
-# Jarvis — Personal Engineering Knowledge OS
+# Friday — Personal Engineering Knowledge OS
 
-Jarvis is a CLI tool (`jar`) that captures, classifies, and stores engineering
+Friday is a CLI tool (`friday`) that captures, classifies, and stores engineering
 knowledge automatically into a private GitHub repo, using **free cloud AI APIs
 only** (no local LLMs). Notes are plain Markdown, cross-linked with `[[wikilinks]]`,
 and every capture is auto-committed and pushed.
@@ -22,42 +22,42 @@ Then copy `.env.example` to `.env` and fill in your values:
 
 | Variable | Purpose |
 |----------|---------|
-| `JARVIS_REPO_PATH` | Absolute path to your `devNote` knowledge repo |
+| `FRIDAY_REPO_PATH` | Absolute path to your `devNote` knowledge repo |
 | `GEMINI_API_KEY` | AI provider (fallback; model list in `config.py`) |
 | `GROQ_API_KEY` | Primary AI provider + Whisper voice transcription |
 | `YOUTUBE_API_KEY` | Richer YouTube metadata (optional; falls back to oEmbed) |
 | `DISCORD_BOT_TOKEN` / `DISCORD_GUILD_ID` / `DISCORD_CHANNEL_ID` | Mobile capture via Discord (optional) |
 
 The AI layer degrades gracefully: **Groq → Gemini → offline keywords**, so
-Jarvis still works with no keys (lower quality classification).
+Friday still works with no keys (lower quality classification).
 
-Model names live only in `jarvis/config.py`, as ordered *lists*. Providers
+Model names live only in `friday/config.py`, as ordered *lists*. Providers
 retire models without warning — `gemini-2.0-flash` and `llama-3.3-70b-versatile`
 both started 404ing mid-2026 — so a dead model is skipped rather than silently
-killing the whole AI layer. `jar doctor` reports which providers actually work.
+killing the whole AI layer. `friday doctor` reports which providers actually work.
 
 ## Commands
 
 ### Capture
 | Command | Description |
 |---------|-------------|
-| `jar note "..."` | Capture → classify → format → save → push → link |
-| `jar note "..." --source leetcode` | Activate the DSA pipeline |
-| `jar note "..." --force` | Overwrite an existing note |
-| `jar note "..." --no-push` | Instant capture — commit locally, skip the GitHub push |
-| `jar youtube URL` | Capture a YouTube video as a structured note |
-| `jar article URL` | Fetch an article (Jina Reader) and save as a note |
-| `jar rss` | Fetch dev RSS feeds and save relevant items as notes |
-| `jar push` | Push any locally-committed notes to GitHub (after `--no-push`) |
+| `friday note "..."` | Capture → classify → format → save → push → link |
+| `friday note "..." --source leetcode` | Activate the DSA pipeline |
+| `friday note "..." --force` | Overwrite an existing note |
+| `friday note "..." --no-push` | Instant capture — commit locally, skip the GitHub push |
+| `friday youtube URL` | Capture a YouTube video as a structured note |
+| `friday article URL` | Fetch an article (Jina Reader) and save as a note |
+| `friday rss` | Fetch dev RSS feeds and save relevant items as notes |
+| `friday push` | Push any locally-committed notes to GitHub (after `--no-push`) |
 
 ## Talk to your knowledge base (MCP)
 
-The most capable way to use Jarvis is **not the CLI** — register it as an MCP
+The most capable way to use Friday is **not the CLI** — register it as an MCP
 server and talk to Claude, which can then search, read, write and reason over
 your whole vault:
 
 ```bash
-claude mcp add --transport stdio -s user jarvis -- python -m jarvis.mcp_server
+claude mcp add --transport stdio -s user friday -- python -m friday.mcp_server
 ```
 
 Then: *"What do I know about Redis persistence?"* · *"Save this: Postgres MVCC
@@ -76,21 +76,21 @@ capture on your phone for free.
 ### Start here each morning
 | Command | Description |
 |---------|-------------|
-| `jar daily` | Yesterday's captures, what's due for review, your streak, and one next action |
+| `friday daily` | Yesterday's captures, what's due for review, your streak, and one next action |
 
 ### Voice
 | Command | Description |
 |---------|-------------|
-| `jar listen` | Speak a note — records, transcribes (Groq Whisper), captures |
-| `jar listen --ask` | Speak a question, get an answer from your own notes |
-| `jar listen --file memo.m4a` | Transcribe a phone voice memo |
+| `friday listen` | Speak a note — records, transcribes (Groq Whisper), captures |
+| `friday listen --ask` | Speak a question, get an answer from your own notes |
+| `friday listen --file memo.m4a` | Transcribe a phone voice memo |
 
 ### Synthesis — make knowledge compound
 | Command | Description |
 |---------|-------------|
-| `jar wiki` | List note clusters worth synthesizing |
-| `jar wiki "redis"` | Merge every scattered Redis note into ONE authoritative page |
-| `jar wiki --all` | Synthesize every suggested cluster |
+| `friday wiki` | List note clusters worth synthesizing |
+| `friday wiki "redis"` | Merge every scattered Redis note into ONE authoritative page |
+| `friday wiki --all` | Synthesize every suggested cluster |
 
 Implements the [LLM Wiki pattern](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f):
 raw captures stay immutable, and the AI maintains a separate `wiki/topics/`
@@ -101,29 +101,29 @@ process.
 ### Recall — get knowledge back out
 | Command | Description |
 |---------|-------------|
-| `jar search "term"` | Instant offline full-text search across note contents, ranked with snippets |
-| `jar ask "question"` | Answer synthesized from your own notes, with cited sources (Gemini→Groq; degrades to search offline) |
-| `jar open "term"` | Open the best-matching note in your editor |
+| `friday search "term"` | Instant offline full-text search across note contents, ranked with snippets |
+| `friday ask "question"` | Answer synthesized from your own notes, with cited sources (Gemini→Groq; degrades to search offline) |
+| `friday open "term"` | Open the best-matching note in your editor |
 
 ### Retention — actually remember what you captured
 | Command | Description |
 |---------|-------------|
-| `jar review` | Spaced-repetition session over notes that are due (1→3→7→16→35→75 day ladder) |
-| `jar review --list` | Just show what's due, don't run the session |
-| `jar quiz` | Quiz yourself on your own notes; `--domain dsa` to focus. Great before interviews |
+| `friday review` | Spaced-repetition session over notes that are due (1→3→7→16→35→75 day ladder) |
+| `friday review --list` | Just show what's due, don't run the session |
+| `friday quiz` | Quiz yourself on your own notes; `--domain dsa` to focus. Great before interviews |
 
 ### Documentation — turn notes into a document
 | Command | Description |
 |---------|-------------|
-| `jar export --domain databases` | Compile a domain into ONE Markdown handbook with a table of contents |
-| `jar export --tag redis --title "Redis Notes"` | Export by tag, type (`--type dsa`), or search (`--query "..."`) |
+| `friday export --domain databases` | Compile a domain into ONE Markdown handbook with a table of contents |
+| `friday export --tag redis --title "Redis Notes"` | Export by tag, type (`--type dsa`), or search (`--query "..."`) |
 
 ### Let it maintain itself
 | Command | Description |
 |---------|-------------|
-| `jar curate` | One autonomous cycle: observe → plan → act → journal (dry run) |
-| `jar curate --apply` | Perform the **safe** actions: relink, reindex, repair the index, synthesize topic pages |
-| `jar schedule --curate` | Run a cycle nightly at 03:00, unattended |
+| `friday curate` | One autonomous cycle: observe → plan → act → journal (dry run) |
+| `friday curate --apply` | Perform the **safe** actions: relink, reindex, repair the index, synthesize topic pages |
+| `friday schedule --curate` | Run a cycle nightly at 03:00, unattended |
 
 The curator has two tiers and the distinction is deliberate:
 
@@ -140,49 +140,49 @@ the loop picks up where the last one stopped.
 ### Maintenance
 | Command | Description |
 |---------|-------------|
-| `jar dedupe` | Find near-identical notes by content (dry run; `--apply` merges, archiving originals) |
-| `jar doctor` | Health-check the repo: empty notes, broken links, duplicates, stale notes, untracked files. Gives a 0-100 score |
-| `jar doctor --details` | List the actual offending files |
-| `jar reindex` | Re-add notes that exist on disk but fell out of `index.json` (they're invisible to search until you do) |
+| `friday dedupe` | Find near-identical notes by content (dry run; `--apply` merges, archiving originals) |
+| `friday doctor` | Health-check the repo: empty notes, broken links, duplicates, stale notes, untracked files. Gives a 0-100 score |
+| `friday doctor --details` | List the actual offending files |
+| `friday reindex` | Re-add notes that exist on disk but fell out of `index.json` (they're invisible to search until you do) |
 
-`jar note` auto-detects YouTube and article URLs and routes them accordingly.
+`friday note` auto-detects YouTube and article URLs and routes them accordingly.
 
 ### Daily logs & reviews
 | Command | Description |
 |---------|-------------|
-| `jar today` | Show today's daily log |
-| `jar log [--date YYYY-MM-DD]` | Show a specific daily log |
-| `jar finalize` | AI-generate the day's narrative summary |
-| `jar weekly` | AI-generate a weekly review from the last 7 logs |
-| `jar logs` | List all logs grouped by month |
-| `jar schedule [--rss] [--curate]` | Set up Windows midnight finalize, daily RSS, nightly curator |
+| `friday today` | Show today's daily log |
+| `friday log [--date YYYY-MM-DD]` | Show a specific daily log |
+| `friday finalize` | AI-generate the day's narrative summary |
+| `friday weekly` | AI-generate a weekly review from the last 7 logs |
+| `friday logs` | List all logs grouped by month |
+| `friday schedule [--rss] [--curate]` | Set up Windows midnight finalize, daily RSS, nightly curator |
 
 ### Knowledge base
 | Command | Description |
 |---------|-------------|
-| `jar status` | Repo stats and git info |
-| `jar inbox` | Show pending notes |
-| `jar process` | Manually process the inbox |
-| `jar dsa [--pattern X]` | DSA notes grouped by pattern |
-| `jar lc NUMBER` | Preview a LeetCode problem |
-| `jar link [--domain X]` | Run the cross-linker over notes |
-| `jar graph "term"` | Show related notes with match scores |
-| `jar cleanup` | Reclassify unsorted notes |
-| `jar index-clean` | Remove stale index.json entries |
-| `jar index-clean --fix-domains` | Also repair domains containing leaked AI prompt text |
-| `jar sync` | Manual git push |
+| `friday status` | Repo stats and git info |
+| `friday inbox` | Show pending notes |
+| `friday process` | Manually process the inbox |
+| `friday dsa [--pattern X]` | DSA notes grouped by pattern |
+| `friday lc NUMBER` | Preview a LeetCode problem |
+| `friday link [--domain X]` | Run the cross-linker over notes |
+| `friday graph "term"` | Show related notes with match scores |
+| `friday cleanup` | Reclassify unsorted notes |
+| `friday index-clean` | Remove stale index.json entries |
+| `friday index-clean --fix-domains` | Also repair domains containing leaked AI prompt text |
+| `friday sync` | Manual git push |
 
 ### Web dashboard & bookmarklet
 | Command | Description |
 |---------|-------------|
-| `jar serve [--host H] [--port P]` | Start the local dashboard + capture API (default `127.0.0.1:7823`) |
-| `jar discord` | Start the Discord bot for mobile capture |
+| `friday serve [--host H] [--port P]` | Start the local dashboard + capture API (default `127.0.0.1:7823`) |
+| `friday discord` | Start the Discord bot for mobile capture |
 
-Open `http://localhost:7823/dashboard`, then **drag the “⚡ Save to Jarvis”
+Open `http://localhost:7823/dashboard`, then **drag the “⚡ Save to Friday”
 button to your bookmarks bar**. Click it on any web page or YouTube video to
-capture straight into Jarvis — works in Zen, Firefox, Chrome, and mobile.
+capture straight into Friday — works in Zen, Firefox, Chrome, and mobile.
 
-Use `jar serve --host 0.0.0.0` to reach the dashboard/bookmarklet from your
+Use `friday serve --host 0.0.0.0` to reach the dashboard/bookmarklet from your
 phone on the same network.
 
 #### API endpoints
@@ -196,7 +196,7 @@ phone on the same network.
 | POST | `/capture/article` | `{url, note?}` | Capture an article |
 | POST | `/capture/youtube` | `{url, note?}` | Capture a YouTube video |
 
-## Package layout (`jarvis/`)
+## Package layout (`friday/`)
 
 | Module | Responsibility |
 |--------|----------------|
@@ -210,14 +210,14 @@ phone on the same network.
 | `youtube_agent.py` / `article_fetcher.py` | Content capture agents |
 | `rss_processor.py` | RSS feed processor (stdlib parser, Groq/keyword filter) |
 | `index_store.py` | Single source of truth for `index.json` — upsert-by-file so re-captures never duplicate rows |
-| `retrieval.py` | Full-text search + AI answers over your own notes (`jar search` / `jar ask`) |
+| `retrieval.py` | Full-text search + AI answers over your own notes (`friday search` / `friday ask`) |
 | `ai.py` | Central AI client — model fallback lists, timeouts, health probe |
-| `mcp_server.py` | Exposes Jarvis as MCP tools for Claude and other agents |
+| `mcp_server.py` | Exposes Friday as MCP tools for Claude and other agents |
 | `wiki.py` | Synthesizes note clusters into authoritative topic pages |
 | `briefing.py` | Daily briefing: streak, due reviews, next action |
 | `analytics.py` | Capture timeline, domain and DSA-pattern coverage |
 | `graph_view.py` | Knowledge-graph nodes/edges for the dashboard |
-| `voice.py` | Recording + Whisper transcription for `jar listen` |
+| `voice.py` | Recording + Whisper transcription for `friday listen` |
 | `curator.py` | Autonomous observe/plan/act/journal maintenance loop |
 | `dedupe.py` | Content-based near-duplicate detection and merging |
 | `health.py` | Repo health checks + `reindex` recovery of unindexed notes |
@@ -229,7 +229,7 @@ phone on the same network.
 | `scheduler.py` / `tasks.py` | Windows Task Scheduler jobs (finalize, rss) |
 | `api_server.py` | FastAPI dashboard + capture API + bookmarklet |
 | `index_cleaner.py` | Prune stale `index.json` entries |
-| `cli.py` | All `jar` commands |
+| `cli.py` | All `friday` commands |
 
 ## Tests
 
@@ -239,7 +239,7 @@ pytest
 ```
 
 192 tests cover every module. The suite is **fully sandboxed**: `tests/conftest.py`
-points `JARVIS_REPO_PATH` at a throwaway temp git repo *before* any jarvis module
+points `FRIDAY_REPO_PATH` at a throwaway temp git repo *before* any friday module
 is imported, so the complete pipeline (capture → classify → format → save → index
 → daily log → git commit) runs end to end without ever touching your real devNote
 repo or pushing to GitHub. AI calls are stubbed, so the suite is deterministic and

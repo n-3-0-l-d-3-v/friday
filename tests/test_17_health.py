@@ -1,10 +1,10 @@
-"""Feature 17: jar doctor (health check) + jar reindex."""
+"""Feature 17: friday doctor (health check) + friday reindex."""
 
 import json
 
 import pytest
 
-from jarvis import health as H
+from friday import health as H
 
 
 @pytest.fixture(autouse=True)

@@ -1,9 +1,9 @@
-"""Feature 11: every `jar` CLI command is registered and runs."""
+"""Feature 11: every `friday` CLI command is registered and runs."""
 
 import pytest
 from click.testing import CliRunner
 
-from jarvis import cli as C
+from friday import cli as C
 
 runner = CliRunner()
 
@@ -24,13 +24,13 @@ def test_all_commands_are_registered():
 def test_help_exits_cleanly():
     result = runner.invoke(C.cli, ["--help"])
     assert result.exit_code == 0
-    assert "Jarvis" in result.output
+    assert "Friday" in result.output
 
 
 @pytest.mark.parametrize("name", sorted(EXPECTED_COMMANDS))
 def test_every_command_has_working_help(name):
     result = runner.invoke(C.cli, [name, "--help"])
-    assert result.exit_code == 0, f"`jar {name} --help` failed: {result.output}"
+    assert result.exit_code == 0, f"`friday {name} --help` failed: {result.output}"
 
 
 # --- read-only commands run against the sandbox ---------------------------
@@ -117,7 +117,7 @@ def test_note_routes_youtube_urls(monkeypatch):
 
 
 def test_rss_command_reports_summary(monkeypatch):
-    import jarvis.rss_processor as R
+    import friday.rss_processor as R
     monkeypatch.setattr(R, "process_feeds",
                         lambda sync_git=True, verbose=True: {
                             "fetched": 30, "new": 5, "saved": 2,
@@ -129,7 +129,7 @@ def test_rss_command_reports_summary(monkeypatch):
 
 
 def test_search_command_runs(monkeypatch):
-    import jarvis.retrieval as RT
+    import friday.retrieval as RT
     monkeypatch.setattr(RT, "search_notes",
                         lambda q, limit=10: [{"title": "Redis Note", "score": 6,
                                               "folder_path": "08-databases",
@@ -142,7 +142,7 @@ def test_search_command_runs(monkeypatch):
 
 
 def test_ask_command_runs(monkeypatch):
-    import jarvis.retrieval as RT
+    import friday.retrieval as RT
     monkeypatch.setattr(RT, "ask",
                         lambda question: {"answer": "Redis uses RDB and AOF.",
                                           "sources": [{"title": "Redis Note"}],
@@ -154,7 +154,7 @@ def test_ask_command_runs(monkeypatch):
 
 
 def test_doctor_command_runs(monkeypatch):
-    import jarvis.health as HL
+    import friday.health as HL
     monkeypatch.setattr(HL, "check_health", lambda stale_days=90: {
         "total_indexed": 3, "missing_files": [], "empty_notes": [],
         "orphan_notes": [], "stale_notes": [], "broken_links": [],
@@ -166,7 +166,7 @@ def test_doctor_command_runs(monkeypatch):
 
 
 def test_reindex_dry_run_command(monkeypatch):
-    import jarvis.health as HL
+    import friday.health as HL
     monkeypatch.setattr(HL, "reindex",
                         lambda dry_run=False: {"added": [{"file": "a.md", "title": "A"}],
                                                "scanned": 5},
@@ -177,7 +177,7 @@ def test_reindex_dry_run_command(monkeypatch):
 
 
 def test_review_list_command(monkeypatch):
-    import jarvis.review as RV
+    import friday.review as RV
     monkeypatch.setattr(RV, "due_notes",
                         lambda limit=10, domain=None: [
                             {"title": "Redis", "domain": "db", "key": "k",
@@ -192,7 +192,7 @@ def test_review_list_command(monkeypatch):
 
 
 def test_review_handles_nothing_due(monkeypatch):
-    import jarvis.review as RV
+    import friday.review as RV
     monkeypatch.setattr(RV, "due_notes", lambda limit=10, domain=None: [], raising=False)
     monkeypatch.setattr(RV, "review_stats",
                         lambda: {"tracked": 0, "mastered": 0, "due": 0}, raising=False)
@@ -202,7 +202,7 @@ def test_review_handles_nothing_due(monkeypatch):
 
 
 def test_quiz_command_runs(monkeypatch):
-    import jarvis.review as RV
+    import friday.review as RV
     monkeypatch.setattr(RV, "generate_quiz",
                         lambda count=5, domain=None, note_type=None: [
                             {"question": "What is AOF?", "answer": "a log",
@@ -220,7 +220,7 @@ def test_export_requires_a_filter():
 
 
 def test_export_command_runs(monkeypatch):
-    import jarvis.exporter as EX
+    import friday.exporter as EX
     monkeypatch.setattr(EX, "export",
                         lambda **kw: {"path": "/tmp/out.md", "count": 4,
                                       "title": "DB Handbook"},
@@ -231,7 +231,7 @@ def test_export_command_runs(monkeypatch):
 
 
 def test_open_command_handles_no_match(monkeypatch):
-    import jarvis.retrieval as RT
+    import friday.retrieval as RT
     monkeypatch.setattr(RT, "search_notes", lambda q, limit=1: [], raising=False)
     result = runner.invoke(C.cli, ["open", "nothing"])
     assert result.exit_code == 0
@@ -240,7 +240,7 @@ def test_open_command_handles_no_match(monkeypatch):
 
 def test_serve_command_starts_server(monkeypatch):
     started = {}
-    import jarvis.api_server as S
+    import friday.api_server as S
     monkeypatch.setattr(S, "run_server",
                         lambda host, port: started.update(host=host, port=port),
                         raising=False)

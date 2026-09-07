@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="jarvis",
+    name="friday",
     version="0.3.0",
     packages=find_packages(),
     install_requires=[
@@ -21,7 +21,7 @@ setup(
     ],
     entry_points={
         "console_scripts": [
-            "jar=jarvis.cli:main",
+            "friday=friday.cli:main",
         ]
     },
 )

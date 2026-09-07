@@ -2,8 +2,8 @@
 
 import json
 
-from jarvis import git_sync as G
-from jarvis.index_cleaner import clean_index
+from friday import git_sync as G
+from friday.index_cleaner import clean_index
 
 
 # --- index_cleaner ---------------------------------------------------------

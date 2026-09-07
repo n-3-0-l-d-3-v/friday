@@ -2,8 +2,8 @@
 
 import json
 
-from jarvis import config
-from jarvis.capture import capture_note, list_pending, mark_failed, mark_processed
+from friday import config
+from friday.capture import capture_note, list_pending, mark_failed, mark_processed
 
 
 def test_config_points_at_sandbox(sandbox):

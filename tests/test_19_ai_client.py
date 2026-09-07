@@ -3,13 +3,13 @@ Feature 19: the central AI client.
 
 Regression suite for the outage that motivated it — Google retired
 `gemini-2.0-flash` and Groq retired `llama-3.3-70b-versatile`, and because every
-call site swallowed the 404, Jarvis silently ran on the keyword classifier for
+call site swallowed the 404, Friday silently ran on the keyword classifier for
 weeks. These tests pin the behaviour that prevents a repeat.
 """
 
 import pytest
 
-from jarvis import ai as AI
+from friday import ai as AI
 
 
 @pytest.fixture(autouse=True)
@@ -195,12 +195,12 @@ def test_health_reports_missing_keys(monkeypatch):
 # --- config ----------------------------------------------------------------
 def test_model_lists_are_non_empty_lists():
     """Guards against someone regressing these back to bare strings."""
-    from jarvis.config import GEMINI_MODELS, GROQ_MODELS
+    from friday.config import GEMINI_MODELS, GROQ_MODELS
     for models in (GEMINI_MODELS, GROQ_MODELS):
         assert isinstance(models, list) and len(models) >= 2
 
 
 def test_retired_models_are_not_in_defaults():
-    from jarvis.config import GEMINI_MODELS, GROQ_MODELS
+    from friday.config import GEMINI_MODELS, GROQ_MODELS
     retired = {"gemini-2.0-flash", "llama-3.3-70b-versatile"}
     assert not (set(GEMINI_MODELS) | set(GROQ_MODELS)) & retired

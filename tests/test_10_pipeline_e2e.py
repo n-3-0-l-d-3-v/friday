@@ -12,8 +12,8 @@ import json
 
 import pytest
 
-from jarvis import orchestrator as O
-from jarvis.capture import capture_note
+from friday import orchestrator as O
+from friday.capture import capture_note
 
 TODAY = datetime.date.today()
 
@@ -32,7 +32,7 @@ def stub_classifier(monkeypatch):
 
 
 def _daily_log_text():
-    from jarvis.daily_log import get_log_path
+    from friday.daily_log import get_log_path
     path = get_log_path(TODAY)
     return path.read_text(encoding="utf-8") if path.exists() else ""
 
@@ -71,7 +71,7 @@ def test_full_pipeline_writes_note_index_and_log(stub_classifier, sandbox, clean
 
 def test_daily_log_entry_is_not_duplicated(stub_classifier, sandbox, clean_index):
     """Regression: orchestrator is the ONLY place that appends to the log."""
-    from jarvis.daily_log import ensure_log_exists
+    from friday.daily_log import ensure_log_exists
     ensure_log_exists(TODAY)
     before = _daily_log_text().count("unique-log-marker")
 
@@ -143,7 +143,7 @@ def test_dsa_note_gets_deterministic_filename(monkeypatch, sandbox, clean_index)
 
 
 def test_process_inbox_moves_file_to_processed(stub_classifier, sandbox, clean_index):
-    from jarvis.config import INBOX_PROCESSED, INBOX_RAW
+    from friday.config import INBOX_PROCESSED, INBOX_RAW
     f = capture_note("inbox move test", source="cli")
     name = f.name
     O.process_inbox_orchestrated(force=True)

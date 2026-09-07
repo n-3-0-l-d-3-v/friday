@@ -5,7 +5,7 @@ import datetime
 import pytest
 from fastapi.testclient import TestClient
 
-from jarvis import api_server as S
+from friday import api_server as S
 
 client = TestClient(S.app)
 TODAY = datetime.date.today().isoformat()
@@ -74,7 +74,7 @@ def test_dashboard_renders(write_index):
     assert r.status_code == 200
     assert "text/html" in r.headers["content-type"]
     html = r.text
-    assert "Jarvis" in html and "Save to Jarvis" in html
+    assert "Friday" in html and "Save to Friday" in html
     assert "Two Sum" in html          # recent captures table
     assert "Domain Breakdown" in html
 
@@ -119,7 +119,7 @@ def test_bookmarklet_detects_youtube_and_handles_offline():
     from urllib.parse import unquote
     js = unquote(S._build_bookmarklet("http://x")[len("javascript:"):])
     assert "youtube" in js.lower()
-    assert "jar serve" in js  # offline hint shown to the user
+    assert "friday serve" in js  # offline hint shown to the user
 
 
 # --- capture endpoint validation ------------------------------------------
@@ -135,8 +135,8 @@ def test_capture_rejects_empty_input(path, payload):
 
 
 def test_capture_note_success_path(monkeypatch):
-    import jarvis.capture as cap
-    import jarvis.orchestrator as orch
+    import friday.capture as cap
+    import friday.orchestrator as orch
     monkeypatch.setattr(cap, "capture_note", lambda *a, **k: "p", raising=False)
     monkeypatch.setattr(orch, "process_inbox_orchestrated",
                         lambda force=False: {
@@ -149,8 +149,8 @@ def test_capture_note_success_path(monkeypatch):
 
 
 def test_capture_article_success_path(monkeypatch):
-    import jarvis.article_fetcher as AF
-    import jarvis.git_sync as GS
+    import friday.article_fetcher as AF
+    import friday.git_sync as GS
     monkeypatch.setattr(AF, "process_article_url",
                         lambda url, note, ts: {"title": "An Article",
                                                "site": "ex.com",
@@ -164,7 +164,7 @@ def test_capture_article_success_path(monkeypatch):
 
 
 def test_capture_article_reports_fetch_failure(monkeypatch):
-    import jarvis.article_fetcher as AF
+    import friday.article_fetcher as AF
     monkeypatch.setattr(AF, "process_article_url",
                         lambda *a, **k: None, raising=False)
     r = client.post("/capture/article", json={"url": "https://bad.example"})
@@ -172,8 +172,8 @@ def test_capture_article_reports_fetch_failure(monkeypatch):
 
 
 def test_capture_youtube_success_path(monkeypatch):
-    import jarvis.git_sync as GS
-    import jarvis.youtube_agent as YA
+    import friday.git_sync as GS
+    import friday.youtube_agent as YA
     monkeypatch.setattr(YA, "process_youtube_url",
                         lambda url, ts: {"title": "A Video", "channel": "Fireship",
                                          "folder_path": "21-creators",
@@ -187,7 +187,7 @@ def test_capture_youtube_success_path(monkeypatch):
 
 # --- retrieval endpoints ---------------------------------------------------
 def test_api_search_endpoint(monkeypatch):
-    import jarvis.retrieval as RT
+    import friday.retrieval as RT
     monkeypatch.setattr(RT, "search_notes",
                         lambda q, limit=10: [{"title": "Hit", "score": 5,
                                               "folder_path": "f", "filename": "n.md",
@@ -200,7 +200,7 @@ def test_api_search_endpoint(monkeypatch):
 
 
 def test_api_ask_endpoint(monkeypatch):
-    import jarvis.retrieval as RT
+    import friday.retrieval as RT
     monkeypatch.setattr(RT, "ask",
                         lambda question, k=8: {"answer": "because X",
                                                "sources": [], "used_ai": True},
