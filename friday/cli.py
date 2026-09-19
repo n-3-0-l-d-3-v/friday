@@ -254,6 +254,23 @@ def process(force, no_push):
     console.print(f"Processed: {result['processed']} | Failed: {result['failed']}")
 
 
+
+@cli.command(name="github")
+@click.option("--readme", is_flag=True, help="Print a generated profile README instead of writing the stats note.")
+def github_cmd(readme):
+    """Snapshot GitHub stats into the vault (agents/Friday/) or draft a profile README."""
+    import os
+    from pathlib import Path
+    from friday import github_presence as gp
+
+    s = gp.summarize(gp.fetch_snapshot())
+    if readme:
+        click.echo(gp.render_profile_readme(s))
+        return
+    vault = os.environ.get("VAULT_PATH")
+    target = Path(vault) / "agents" / "Friday" if vault else Path("vault") / "Friday"
+    click.echo(f"Wrote {gp.write_snapshot(target, s)}")
+
 @cli.command(name="push")
 def push_cmd():
     """Push any locally-committed notes to GitHub (use after 'friday note --no-push')."""
