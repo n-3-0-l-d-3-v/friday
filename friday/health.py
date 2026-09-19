@@ -141,7 +141,7 @@ def check_health(stale_days=_STALE_DAYS):
 
     # --- files on disk with no index row ---
     indexed_paths = {str(_note_path(n).resolve()).lower() for n in notes}
-    skip_dirs = {"daily-logs", "weekly-summaries", "inbox", ".obsidian", ".git"}
+    skip_dirs = {"daily-logs", "weekly-summaries", "inbox", ".obsidian", ".git", "agents"}
     for md in REPO_PATH.rglob("*.md"):
         if any(part in skip_dirs for part in md.parts):
             continue
@@ -231,7 +231,7 @@ def reindex(dry_run=False):
     indexed = {
         (n.get("folder_path", ""), n.get("filename", "")) for n in index.get("notes", [])
     }
-    skip_dirs = {"daily-logs", "weekly-summaries", "inbox", ".obsidian", ".git"}
+    skip_dirs = {"daily-logs", "weekly-summaries", "inbox", ".obsidian", ".git", "agents"}
 
     added = []
     scanned = 0
