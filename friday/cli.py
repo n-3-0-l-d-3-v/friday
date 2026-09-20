@@ -271,6 +271,32 @@ def github_cmd(readme):
     target = Path(vault) / "agents" / "Friday" if vault else Path("vault") / "Friday"
     click.echo(f"Wrote {gp.write_snapshot(target, s)}")
 
+
+@cli.command(name="draft")
+@click.argument("platform", type=click.Choice(["linkedin", "blog", "devto", "thread"]))
+@click.argument("source", type=click.Path(exists=True, dir_okay=False))
+@click.option("--model", default=None, help="Local Ollama model (default qwen2.5:7b).")
+def draft_cmd(platform, source, model):
+    """Draft a post from a vault note using the local model (never publishes)."""
+    import os
+    from pathlib import Path
+    from friday import drafts
+
+    vault = os.environ.get("VAULT_PATH")
+    if not vault:
+        raise click.ClickException("set VAULT_PATH to your vault folder")
+    text = Path(source).read_text(encoding="utf-8")
+    try:
+        body = drafts.generate(drafts.build_prompt(platform, text), model or drafts.DEFAULT_MODEL)
+    except drafts.DraftError as exc:
+        raise click.ClickException(str(exc))
+    flagged = drafts.ungrounded_numbers(text, body)
+    if flagged:
+        body += "\n\n> REVIEW: numbers not found in the source note (verify or delete): " + ", ".join(flagged)
+        click.echo(f"warning: possibly invented numbers: {', '.join(flagged)}", err=True)
+    out = drafts.write_draft(Path(vault), platform, Path(source).stem.replace("-", " ").title(), body, Path(source).name)
+    click.echo(f"Draft saved (status: draft, review before posting): {out}")
+
 @cli.command(name="push")
 def push_cmd():
     """Push any locally-committed notes to GitHub (use after 'friday note --no-push')."""
