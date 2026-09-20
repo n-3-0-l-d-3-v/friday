@@ -242,30 +242,31 @@ def transcribe(audio_path):
     return None
 
 
+HEALTH_PROBE_TIMEOUT = 5.0
+
+
 def health():
-    """Probe each provider with a trivial prompt. Used by `friday doctor`."""
-    report = {}
+    """Probe each provider with a trivial prompt (in parallel). Used by `friday doctor` and `--health`."""
+    from concurrent.futures import ThreadPoolExecutor
+
     probe = "Reply with the single word: OK"
 
-    if not GEMINI_API_KEY:
-        report["gemini"] = {"ok": False, "model": None, "error": "no API key"}
-    else:
-        text = _try_gemini(probe, 16, 0.0)
-        report["gemini"] = {
-            "ok": bool(text),
-            "model": _working["gemini"],
-            "error": "" if text else _last_error["gemini"],
-        }
+    def _probe(name, key, fn):
+        if not key:
+            return name, {"ok": False, "model": None, "error": "no API key"}
+        text = fn(probe, 16, 0.0)
+        return name, {"ok": bool(text), "model": _working[name], "error": "" if text else _last_error[name]}
 
-    if not GROQ_API_KEY:
-        report["groq"] = {"ok": False, "model": None, "error": "no API key"}
-    else:
-        text = _try_groq(probe, 16, 0.0)
-        report["groq"] = {
-            "ok": bool(text),
-            "model": _working["groq"],
-            "error": "" if text else _last_error["groq"],
-        }
+    pool = ThreadPoolExecutor(max_workers=2)
+    futures = {"gemini": pool.submit(_probe, "gemini", GEMINI_API_KEY, _try_gemini),
+               "groq": pool.submit(_probe, "groq", GROQ_API_KEY, _try_groq)}
+    report = {}
+    for name, fut in futures.items():
+        try:
+            report[name] = fut.result(timeout=HEALTH_PROBE_TIMEOUT)[1]
+        except Exception:  # noqa: BLE001 - timeout or probe crash: report, never hang
+            report[name] = {"ok": False, "model": None, "error": f"probe exceeded {HEALTH_PROBE_TIMEOUT}s"}
+    pool.shutdown(wait=False)  # a slow provider must not block the health report
 
     report["any"] = report["gemini"]["ok"] or report["groq"]["ok"]
     return report
