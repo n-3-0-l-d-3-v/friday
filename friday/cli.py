@@ -297,6 +297,21 @@ def draft_cmd(platform, source, model):
     out = drafts.write_draft(Path(vault), platform, Path(source).stem.replace("-", " ").title(), body, Path(source).name)
     click.echo(f"Draft saved (status: draft, review before posting): {out}")
 
+
+@cli.command(name="portfolio")
+@click.option("--out", default="portfolio/index.html", show_default=True, help="Output HTML file.")
+@click.option("--name", default=None, help="Display name (default: GitHub login).")
+def portfolio_cmd(out, name):
+    """Generate a static portfolio page from GitHub data (public repos only)."""
+    from pathlib import Path
+    from friday import github_presence as gp, portfolio
+
+    s = gp.summarize(gp.fetch_snapshot())
+    path = Path(out)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(portfolio.render(s, name), encoding="utf-8")
+    click.echo(f"Wrote {path} (host free with GitHub Pages)")
+
 @cli.command(name="push")
 def push_cmd():
     """Push any locally-committed notes to GitHub (use after 'friday note --no-push')."""
