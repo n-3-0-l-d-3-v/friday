@@ -1,8 +1,9 @@
 # Friday — Personal Engineering Knowledge OS
 
 Friday is a CLI tool (`friday`) that captures, classifies, and stores engineering
-knowledge automatically into a private GitHub repo, using **free cloud AI APIs
-only** (no local LLMs). Notes are plain Markdown, cross-linked with `[[wikilinks]]`,
+knowledge automatically into a private GitHub repo, using **free AI only**:
+free-tier cloud APIs, with a local Ollama model (127.0.0.1) as the always-on
+fallback. Notes are plain Markdown, cross-linked with `[[wikilinks]]`,
 and every capture is auto-committed and pushed.
 
 ```
@@ -28,8 +29,10 @@ Then copy `.env.example` to `.env` and fill in your values:
 | `YOUTUBE_API_KEY` | Richer YouTube metadata (optional; falls back to oEmbed) |
 | `DISCORD_BOT_TOKEN` / `DISCORD_GUILD_ID` / `DISCORD_CHANNEL_ID` | Mobile capture via Discord (optional) |
 
-The AI layer degrades gracefully: **Groq → Gemini → offline keywords**, so
-Friday still works with no keys (lower quality classification).
+The AI layer degrades gracefully: **Groq → Gemini → local Ollama → offline
+keywords**, so Friday still works with no keys and no network. Set
+`FRIDAY_AI_PRIMARY=ollama` to go local-first (private notes never leave the
+machine). Socials commands (`ideas`, `draft`) always use the local model.
 
 Model names live only in `friday/config.py`, as ordered *lists*. Providers
 retire models without warning — `gemini-2.0-flash` and `llama-3.3-70b-versatile`
