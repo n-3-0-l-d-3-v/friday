@@ -298,6 +298,50 @@ def draft_cmd(platform, source, model):
     click.echo(f"Draft saved (status: draft, review before posting): {out}")
 
 
+@cli.command(name="ideas")
+@click.option("--days", default=7, show_default=True, help="Look back this many days.")
+@click.option("--count", default=5, show_default=True, help="Max ideas.")
+@click.option("--draft", "draft_n", default=0, show_default=True, help="Also write full drafts for the top N ideas.")
+@click.option("--model", default=None, help="Local Ollama model (default qwen2.5:7b).")
+@click.option("--dry-run", is_flag=True, help="List the notes that would be used; no model call, no write.")
+def ideas_cmd(days, count, draft_n, model, dry_run):
+    """Weekly content ideas from recently captured notes -> Socials/ (local model, never publishes)."""
+    import os
+    from datetime import date
+    from pathlib import Path
+    from friday import ideas
+
+    vault = os.environ.get("VAULT_PATH")
+    if not vault:
+        raise click.ClickException("set VAULT_PATH to your vault folder")
+    today = date.today()
+    notes = ideas.recent_notes(Path(vault), days, today)
+    if dry_run:
+        click.echo(f"{len(notes)} note(s) from the last {days} day(s):")
+        for n in notes:
+            click.echo(f"  [{n.id}] {n.when} {n.rel}")
+        return
+    try:
+        raw = ideas.generate(ideas.build_prompt(notes, count), count, model or ideas.DEFAULT_MODEL)
+    except ideas.IdeasError as exc:
+        raise click.ClickException(str(exc))
+    found = ideas.ground(raw, notes, count)
+    if not found:
+        raise click.ClickException("the model returned no ideas grounded in your notes; nothing written")
+    out = ideas.write_ideas(Path(vault), ideas.render(found, notes, days, today), today)
+    click.echo(f"{len(found)} idea(s) saved (status: draft): {out}")
+    for i, idea in enumerate(found, 1):
+        click.echo(f"  {i}. [{idea.platform}] {idea.title}")
+    for idea in found[:draft_n]:
+        try:
+            path, flagged = ideas.draft_from_idea(Path(vault), idea, model or ideas.DEFAULT_MODEL, today)
+        except ideas.IdeasError as exc:
+            click.echo(f"  skipped draft for '{idea.title}': {exc}", err=True)
+            continue
+        note = f" (check numbers: {', '.join(flagged)})" if flagged else ""
+        click.echo(f"  draft: {path}{note}")
+
+
 @cli.command(name="portfolio")
 @click.option("--out", default="portfolio/index.html", show_default=True, help="Output HTML file.")
 @click.option("--name", default=None, help="Display name (default: GitHub login).")

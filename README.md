@@ -50,6 +50,15 @@ killing the whole AI layer. `friday doctor` reports which providers actually wor
 | `friday rss` | Fetch dev RSS feeds and save relevant items as notes |
 | `friday push` | Push any locally-committed notes to GitHub (after `--no-push`) |
 
+### Socials & LifeOS (local model, draft-only: nothing is ever posted)
+| Command | Description |
+|---------|-------------|
+| `friday ideas [--days 7] [--count 5] [--draft N] [--dry-run]` | Weekly post ideas from recently captured notes → `Socials/ideas-<week>.md`; every idea cites real notes (invented sources dropped), thin weeks refused; `--draft N` also drafts the top N |
+| `friday draft <linkedin\|blog\|devto\|thread> <note>` | Draft one post from a note → `Socials/` (`status: draft`, invented numbers flagged) |
+| `friday github [--readme]` | GitHub stats snapshot (+ profile README) |
+| `friday portfolio` | Static portfolio page from public repos |
+| `friday lifeos` / `friday habit <name> [--undo]` | Today's daily note from the vault template + habit streaks |
+
 ## Talk to your knowledge base (MCP)
 
 The most capable way to use Friday is **not the CLI** — register it as an MCP
