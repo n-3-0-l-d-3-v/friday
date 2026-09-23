@@ -16,6 +16,7 @@ from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
+from friday.ai import ollama_ctx
 from friday.drafts import DEFAULT_MODEL, OLLAMA, STYLES, DraftError
 
 SKIP_DIRS = {"agents", "Daily", "daily-logs", "System", "Socials", "wiki", "00-meta",
@@ -138,7 +139,7 @@ def build_prompt(notes: list[Note], count: int) -> str:
 
 def generate(prompt: str, count: int, model: str = DEFAULT_MODEL, host: str = OLLAMA, timeout: float = 300) -> dict:
     body = json.dumps({"model": model, "messages": [{"role": "user", "content": prompt}], "stream": False,
-                       "format": schema(count), "options": {"temperature": 0.4}}).encode()
+                       "format": schema(count), "options": {"temperature": 0.4, **ollama_ctx(prompt)}}).encode()
     req = urllib.request.Request(f"{host}/api/chat", data=body, headers={"Content-Type": "application/json"})
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:

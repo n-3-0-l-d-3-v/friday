@@ -28,3 +28,11 @@ def test_thin_source_refused():
 
 def test_ungrounded_numbers_flags_only_new_numbers():
     assert drafts.ungrounded_numbers("I fixed 3 bugs in 2 days", "Fixed 3 bugs, 15 people, 2 days") == ["15"]
+
+
+def test_ollama_ctx_grows_only_when_prompt_needs_it():
+    from friday.ai import ollama_ctx
+    assert ollama_ctx("short") == {}
+    assert ollama_ctx("x" * 12000) == {"num_ctx": 8192}
+    assert ollama_ctx("x" * 10000, reply_tokens=2500) == {"num_ctx": 8192}  # wiki synthesis reply
+    assert ollama_ctx("x" * 10**7) == {"num_ctx": 32768}

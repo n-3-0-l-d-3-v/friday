@@ -169,6 +169,20 @@ def _try_groq(prompt, max_tokens, temperature):
     return None
 
 
+OLLAMA_DEFAULT_CTX = 4096
+
+
+def ollama_ctx(prompt, reply_tokens=768):
+    """Ollama silently drops the START of a prompt that overflows its 4096-token
+    default window (i.e. the instructions). Ask for a bigger num_ctx only when
+    this prompt needs one (~3.5 chars/token, conservative), else keep the cheap default."""
+    need = int(len(prompt) / 3.5) + reply_tokens
+    ctx = OLLAMA_DEFAULT_CTX
+    while ctx < need and ctx < 32768:
+        ctx *= 2
+    return {"num_ctx": ctx} if ctx > OLLAMA_DEFAULT_CTX else {}
+
+
 def _try_ollama(prompt, max_tokens, temperature):
     """Local model via Ollama (stdlib HTTP, 127.0.0.1 only). Free and private."""
     if not OLLAMA_ENABLED:
@@ -179,7 +193,7 @@ def _try_ollama(prompt, max_tokens, temperature):
         "model": OLLAMA_MODEL,
         "messages": [{"role": "user", "content": prompt}],
         "stream": False,
-        "options": {"temperature": temperature, "num_predict": max_tokens},
+        "options": {"temperature": temperature, "num_predict": max_tokens, **ollama_ctx(prompt, max_tokens)},
     }).encode("utf-8")
     req = urllib.request.Request(f"{OLLAMA_HOST}/api/chat", data=body,
                                  headers={"Content-Type": "application/json"})

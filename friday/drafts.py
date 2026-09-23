@@ -12,6 +12,8 @@ import urllib.request
 from datetime import date
 from pathlib import Path
 
+from friday.ai import ollama_ctx
+
 OLLAMA = "http://127.0.0.1:11434"
 DEFAULT_MODEL = "qwen2.5:7b"
 MIN_SOURCE_CHARS = 200
@@ -38,7 +40,7 @@ def build_prompt(platform: str, source_text: str) -> str:
 
 
 def generate(prompt: str, model: str = DEFAULT_MODEL, host: str = OLLAMA, timeout: float = 300) -> str:
-    body = json.dumps({"model": model, "messages": [{"role": "user", "content": prompt}], "stream": False, "options": {"temperature": 0.3}}).encode()
+    body = json.dumps({"model": model, "messages": [{"role": "user", "content": prompt}], "stream": False, "options": {"temperature": 0.3, **ollama_ctx(prompt, 1024)}}).encode()
     req = urllib.request.Request(f"{host}/api/chat", data=body, headers={"Content-Type": "application/json"})
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
