@@ -298,6 +298,23 @@ def draft_cmd(platform, source, model):
     click.echo(f"Draft saved (status: draft, review before posting): {out}")
 
 
+@cli.command(name="calendar")
+@click.option("--write", "do_write", is_flag=True, help="Also write Socials/Calendar.md in the vault.")
+def calendar_cmd(do_write):
+    """Content calendar of Socials/ posts: scheduled (overdue flagged), undated drafts, posted."""
+    import os
+    from pathlib import Path
+    from friday import content_calendar as cc
+
+    vault = os.environ.get("VAULT_PATH")
+    if not vault:
+        raise click.ClickException("set VAULT_PATH to your vault folder")
+    text = cc.render(cc.load_posts(Path(vault)))
+    click.echo(text)
+    if do_write:
+        click.echo(f"Wrote {cc.write(Path(vault), text)}")
+
+
 @cli.command(name="ideas")
 @click.option("--days", default=7, show_default=True, help="Look back this many days.")
 @click.option("--count", default=5, show_default=True, help="Max ideas.")
