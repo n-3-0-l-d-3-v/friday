@@ -53,6 +53,11 @@ def test_build_prompt_refuses_empty_and_thin_weeks(vault):
     assert "[N2] Consistent Hashing" in p and "up to 3" in p
 
 
+def test_prompt_stays_within_budget_for_a_full_week(tmp_path):
+    notes = [ideas.Note(f"N{i}", tmp_path / "a.md", "a.md", "t", TODAY, "word " * 400) for i in range(ideas.MAX_NOTES)]
+    assert len(ideas.build_prompt(notes, 5)) < ideas.LISTING_BUDGET + 2500
+
+
 def test_ground_drops_invented_sources_bad_platforms_and_duplicates(vault):
     notes = ideas.recent_notes(vault, 7, TODAY)
     raw = {"ideas": [

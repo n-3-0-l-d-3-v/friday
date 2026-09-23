@@ -23,6 +23,9 @@ SKIP_DIRS = {"agents", "Daily", "daily-logs", "System", "Socials", "wiki", "00-m
 MIN_TOTAL_CHARS = 400
 EXCERPT_CHARS = 700
 MAX_NOTES = 25
+# Keep the whole prompt inside Ollama's default 4096-token window (it silently
+# drops the START of an overflowing prompt, i.e. the instructions).
+LISTING_BUDGET = 9000
 
 _DATE_RE = re.compile(r"^date:\s*[\"']?(\d{4}-\d{2}-\d{2})", re.MULTILINE)
 _TITLE_RE = re.compile(r"^title:\s*[\"']?(.+?)[\"']?\s*$", re.MULTILINE)
@@ -121,7 +124,8 @@ def build_prompt(notes: list[Note], count: int) -> str:
         raise IdeasError("no notes captured in this window -- nothing to build ideas from")
     if sum(len(n.body) for n in notes) < MIN_TOTAL_CHARS:
         raise IdeasError(f"this window's notes are too thin (<{MIN_TOTAL_CHARS} chars total) to suggest ideas without inventing content")
-    listing = "\n\n".join(f"[{n.id}] {n.title} ({n.rel})\n{n.body[:EXCERPT_CHARS]}" for n in notes)
+    per_note = max(200, min(EXCERPT_CHARS, LISTING_BUDGET // len(notes)))
+    listing = "\n\n".join(f"[{n.id}] {n.title} ({n.rel})\n{n.body[:per_note]}" for n in notes)
     return (
         f"Suggest up to {count} post ideas for a developer who is learning in public, based ONLY on the notes below. "
         "Each idea: a specific title, a one-sentence angle (what the reader learns), the best platform "
