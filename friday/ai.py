@@ -35,12 +35,16 @@ from friday.config import (
     GEMINI_MODELS,
     GROQ_API_KEY,
     GROQ_MODELS,
+    OLLAMA_ENABLED,
+    OLLAMA_HOST,
+    OLLAMA_MODEL,
     WHISPER_MODEL,
 )
 
 _lock = threading.Lock()
-_working = {"gemini": None, "groq": None}  # cache first model that responds
-_last_error = {"gemini": "", "groq": ""}
+_working = {"gemini": None, "groq": None, "ollama": None}  # cache first model that responds
+_last_error = {"gemini": "", "groq": "", "ollama": ""}
+OLLAMA_TIMEOUT = 180
 
 GEMINI_TIMEOUT = 45
 GROQ_TIMEOUT = 60
@@ -66,6 +70,7 @@ def reset_cache():
     with _lock:
         _working["gemini"] = None
         _working["groq"] = None
+        _working["ollama"] = None
 
 
 # --------------------------------------------------------------------------- #
@@ -164,6 +169,46 @@ def _try_groq(prompt, max_tokens, temperature):
     return None
 
 
+def _try_ollama(prompt, max_tokens, temperature):
+    """Local model via Ollama (stdlib HTTP, 127.0.0.1 only). Free and private."""
+    if not OLLAMA_ENABLED:
+        return None
+    import urllib.request
+
+    body = json.dumps({
+        "model": OLLAMA_MODEL,
+        "messages": [{"role": "user", "content": prompt}],
+        "stream": False,
+        "options": {"temperature": temperature, "num_predict": max_tokens},
+    }).encode("utf-8")
+    req = urllib.request.Request(f"{OLLAMA_HOST}/api/chat", data=body,
+                                 headers={"Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=OLLAMA_TIMEOUT) as resp:
+            text = (json.loads(resp.read())["message"]["content"] or "").strip()
+        if text:
+            with _lock:
+                _working["ollama"] = OLLAMA_MODEL
+            return text
+        _last_error["ollama"] = f"{OLLAMA_MODEL}: empty response"
+    except Exception as exc:
+        _last_error["ollama"] = f"{OLLAMA_MODEL}: {str(exc)[:160]}"
+    return None
+
+
+_PROVIDERS = {"groq": "_try_groq", "gemini": "_try_gemini", "ollama": "_try_ollama"}
+
+
+def provider_order(primary=None):
+    """Primary first, then the other cloud provider, then the local model as the
+    always-available free fallback (unless it is primary already)."""
+    primary = (primary or AI_PRIMARY or "groq").lower()
+    if primary not in _PROVIDERS:
+        primary = "groq"
+    rest = [p for p in ("groq", "gemini", "ollama") if p != primary]
+    return [primary] + rest
+
+
 # --------------------------------------------------------------------------- #
 # Public API
 # --------------------------------------------------------------------------- #
@@ -179,12 +224,11 @@ def complete(prompt, max_tokens=1200, temperature=0.2, prefer=None, retries=2):
     surfaced anywhere. Backoff is short because a genuinely dead model has
     already been ruled out by _is_fatal before we get here.
     """
-    primary = (prefer or AI_PRIMARY or "groq").lower()
-    order = ["groq", "gemini"] if primary == "groq" else ["gemini", "groq"]
+    order = provider_order(prefer)
 
     for attempt in range(retries + 1):
         for provider in order:
-            fn = _try_gemini if provider == "gemini" else _try_groq
+            fn = globals()[_PROVIDERS[provider]]
             result = fn(prompt, max_tokens, temperature)
             if result:
                 return result
@@ -219,10 +263,24 @@ def complete_json(prompt, max_tokens=1200, temperature=0.1, prefer=None):
     return extract_json(complete(prompt, max_tokens, temperature, prefer=prefer))
 
 
-def transcribe(audio_path):
-    """Transcribe audio via Groq Whisper (free tier). Returns text or None."""
-    if not GROQ_API_KEY:
+def _transcribe_local(audio_path):
+    """Offline fallback: faster-whisper on CPU if installed. Returns text or None."""
+    try:
+        from faster_whisper import WhisperModel
+    except ImportError:
         return None
+    try:
+        segments, _ = WhisperModel("base.en", device="cpu", compute_type="int8").transcribe(str(audio_path))
+        return " ".join(s.text.strip() for s in segments).strip() or None
+    except Exception as exc:
+        _last_error["ollama"] = f"local whisper: {str(exc)[:160]}"
+        return None
+
+
+def transcribe(audio_path):
+    """Transcribe audio via Groq Whisper (free tier), else locally (faster-whisper)."""
+    if not GROQ_API_KEY:
+        return _transcribe_local(audio_path)
     import httpx
 
     try:
@@ -239,7 +297,7 @@ def transcribe(audio_path):
         _last_error["groq"] = f"whisper: HTTP {resp.status_code} {resp.text[:120]}"
     except Exception as exc:
         _last_error["groq"] = f"whisper: {str(exc)[:160]}"
-    return None
+    return _transcribe_local(audio_path)
 
 
 HEALTH_PROBE_TIMEOUT = 5.0
@@ -257,9 +315,11 @@ def health():
         text = fn(probe, 16, 0.0)
         return name, {"ok": bool(text), "model": _working[name], "error": "" if text else _last_error[name]}
 
-    pool = ThreadPoolExecutor(max_workers=2)
+    pool = ThreadPoolExecutor(max_workers=3)
     futures = {"gemini": pool.submit(_probe, "gemini", GEMINI_API_KEY, _try_gemini),
                "groq": pool.submit(_probe, "groq", GROQ_API_KEY, _try_groq)}
+    if OLLAMA_ENABLED:
+        futures["ollama"] = pool.submit(_probe, "ollama", True, _try_ollama)
     report = {}
     for name, fut in futures.items():
         try:
@@ -268,5 +328,5 @@ def health():
             report[name] = {"ok": False, "model": None, "error": f"probe exceeded {HEALTH_PROBE_TIMEOUT}s"}
     pool.shutdown(wait=False)  # a slow provider must not block the health report
 
-    report["any"] = report["gemini"]["ok"] or report["groq"]["ok"]
+    report["any"] = any(v["ok"] for v in report.values())
     return report

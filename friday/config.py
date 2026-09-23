@@ -83,6 +83,13 @@ GROQ_MODELS = _model_list("FRIDAY_GROQ_MODELS", "JARVIS_GROQ_MODELS", [
 AI_PRIMARY = _env("FRIDAY_AI_PRIMARY", "JARVIS_AI_PRIMARY", "groq").strip().lower()
 
 # Free speech-to-text on Groq — powers `friday listen`.
+# Local model (free, private, works offline and when cloud quotas are exhausted).
+# Always tried as the last-resort provider unless FRIDAY_OLLAMA=false; set
+# FRIDAY_AI_PRIMARY=ollama to use it first.
+OLLAMA_ENABLED = os.getenv("FRIDAY_OLLAMA", "true").strip().lower() not in {"false", "0", "no"}
+OLLAMA_HOST = os.getenv("FRIDAY_OLLAMA_HOST", "http://127.0.0.1:11434")
+OLLAMA_MODEL = os.getenv("FRIDAY_OLLAMA_MODEL", "qwen2.5:7b")
+
 WHISPER_MODEL = _env("FRIDAY_WHISPER_MODEL", "JARVIS_WHISPER_MODEL", "whisper-large-v3-turbo")
 
 # Note style. Lean notes keep only the sections that actually carry content,

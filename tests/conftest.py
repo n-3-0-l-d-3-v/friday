@@ -133,3 +133,11 @@ def write_index():
 def _no_ambient_vault(monkeypatch):
     """Dev machine sets a real VAULT_PATH; tests must never touch it."""
     monkeypatch.delenv("VAULT_PATH", raising=False)
+
+
+@pytest.fixture(autouse=True)
+def _no_local_model(monkeypatch):
+    """Tests must never call the real local model; tests that want it opt in."""
+    import friday.ai as ai
+
+    monkeypatch.setattr(ai, "OLLAMA_ENABLED", False)
