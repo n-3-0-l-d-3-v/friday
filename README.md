@@ -73,12 +73,14 @@ claude mcp add --transport stdio -s user friday -- python -m friday.mcp_server
 Then: *"What do I know about Redis persistence?"* · *"Save this: Postgres MVCC
 keeps old row versions for concurrent reads"* · *"Build me a DSA handbook."*
 
-Eighteen tools are exposed, covering retrieval (`search_notes`, `read_note`,
+Twenty-two tools are exposed, covering retrieval (`search_notes`, `read_note`,
 `ask_knowledge_base`, `find_related`), capture (`capture_note`, `capture_url`),
 overview (`knowledge_stats`, `list_recent`, `get_daily_log`, `daily_briefing`,
 `learning_analytics`), and maintenance (`notes_due_for_review`,
 `knowledge_health`, `export_document`, `suggest_wiki_topics`,
-`synthesize_topic`, `find_duplicates`, `curate_knowledge_base`).
+`synthesize_topic`, `find_duplicates`, `curate_knowledge_base`), plus LifeOS
+(`log_habit`, `today`) and socials (`content_ideas`, `content_calendar`;
+draft-only, never posts).
 
 Because the Claude mobile app does speech-to-text, this also gives you voice
 capture on your phone for free.

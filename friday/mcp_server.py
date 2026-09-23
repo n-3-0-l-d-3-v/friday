@@ -572,6 +572,39 @@ def today() -> str:
     return f"{'Created' if created else 'Existing'} {path.name}. Streaks: {streak}"
 
 
+@server.tool(description=(
+    "Suggest post ideas from the notes captured in the last `days` days, using the LOCAL model. "
+    "Every idea cites real notes (invented sources are dropped); thin weeks are refused rather than padded. "
+    "Writes a status: draft ideas note to Socials/ unless dry_run; never posts anything. Slow (~1 min)."))
+def content_ideas(days: int = 7, count: int = 5, dry_run: bool = False) -> str:
+    from datetime import date
+    from friday import ideas
+    from friday.config import REPO_PATH
+
+    today_ = date.today()
+    notes = ideas.recent_notes(REPO_PATH, days, today_)
+    try:
+        found = ideas.ground(ideas.generate(ideas.build_prompt(notes, count), count), notes, count)
+    except ideas.IdeasError as exc:
+        return f"Error: {exc}"
+    if not found:
+        return "The local model returned no ideas grounded in your notes; nothing written."
+    lines = [f"{i}. [{x.platform}] {x.title} -- {x.angle} (sources: {', '.join(n.rel for n in x.sources)})"
+             for i, x in enumerate(found, 1)]
+    if not dry_run:
+        path = ideas.write_ideas(REPO_PATH, ideas.render(found, notes, days, today_), today_)
+        lines.append(f"Saved (status: draft): {path}")
+    return "\n".join(lines)
+
+
+@server.tool(description="Content calendar of the Socials/ posts: scheduled by publish_on (overdue flagged), undated drafts, posted. Read-only.")
+def content_calendar() -> str:
+    from friday import content_calendar as cc
+    from friday.config import REPO_PATH
+
+    return cc.render(cc.load_posts(REPO_PATH))
+
+
 def main():
     server.run(transport="stdio")
 
