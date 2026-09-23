@@ -95,38 +95,28 @@ def fetch_video_metadata(video_id):
         return None
 
 
-def fetch_transcript(video_id):
-    """Fetch transcript from YouTube using youtube-transcript-api."""
+def _clean(text):
+    text = re.sub(r"\[.*?\]|[♪♫]", "", text)  # remove [Music], music-note glyphs
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def fetch_snippets(video_id):
+    """Timed transcript as [(start_seconds, text), ...], or None."""
     try:
         from youtube_transcript_api import YouTubeTranscriptApi
         from youtube_transcript_api import TranscriptsDisabled, NoTranscriptFound
 
         try:
-            api = YouTubeTranscriptApi()
-            transcript = api.fetch(video_id, languages=["en", "en-US", "en-GB"])
-
-            # Combine all text segments across snippet objects
-            parts = []
+            transcript = YouTubeTranscriptApi().fetch(video_id, languages=["en", "en-US", "en-GB"])
+            snippets = []
             for snippet in transcript:
-                text = getattr(snippet, "text", "")
+                text = _clean(getattr(snippet, "text", "") or "")
                 if text:
-                    parts.append(text)
-            full_text = " ".join(parts)
-
-            # Clean up formatting artifacts
-            full_text = re.sub(r"\[.*?\]", "", full_text)  # remove [Music] etc
-            full_text = re.sub(r"\s+", " ", full_text).strip()
-
-            if not full_text:
+                    snippets.append((float(getattr(snippet, "start", 0) or 0), text))
+            if not snippets:
                 print("  [YouTube] Transcript returned empty content")
                 return None
-
-            # Truncate to 8000 chars
-            if len(full_text) > 8000:
-                full_text = full_text[:8000] + "..."
-
-            print(f"  [YouTube] Transcript fetched: {len(full_text)} chars")
-            return full_text
+            return snippets
 
         except TranscriptsDisabled:
             print("  [YouTube] Transcripts disabled for this video")
@@ -141,6 +131,57 @@ def fetch_transcript(video_id):
     except Exception as e:
         print(f"  [YouTube] Transcript fetch failed: {e}")
         return None
+
+
+def transcript_text(snippets, limit=8000):
+    """Plain transcript text (for the AI summary), truncated to `limit`."""
+    if not snippets:
+        return None
+    full_text = " ".join(t for _, t in snippets)
+    if len(full_text) > limit:
+        full_text = full_text[:limit] + "..."
+    return full_text or None
+
+
+def fetch_transcript(video_id):
+    """Fetch transcript text from YouTube using youtube-transcript-api."""
+    text = transcript_text(fetch_snippets(video_id))
+    if text:
+        print(f"  [YouTube] Transcript fetched: {len(text)} chars")
+    return text
+
+
+def _stamp(seconds):
+    s = int(seconds)
+    h, m, s = s // 3600, s % 3600 // 60, s % 60
+    return f"{h}:{m:02d}:{s:02d}" if h else f"{m:02d}:{s:02d}"
+
+
+def timed_transcript_md(snippets, url, bucket=60, max_chars=15000):
+    """Collapsed Obsidian callout: one line per ~`bucket` seconds, each
+    starting with a clickable timestamp that opens the video at that point."""
+    if not snippets:
+        return None
+    sep = "&" if "?" in url else "?"
+    groups, start, parts = [], None, []
+    for sec, text in snippets:
+        if start is None:
+            start = sec
+        elif sec - start >= bucket:
+            groups.append((start, " ".join(parts)))
+            start, parts = sec, []
+        parts.append(text)
+    if parts:
+        groups.append((start, " ".join(parts)))
+    lines, used = ["> [!note]- Transcript (timestamped)"], 0
+    for sec, text in groups:
+        line = f"> - [{_stamp(sec)}]({url}{sep}t={int(sec)}s) {text}"
+        if used + len(line) > max_chars:
+            lines.append("> - ... (truncated)")
+            break
+        lines.append(line)
+        used += len(line)
+    return "\n".join(lines)
 
 
 CREATOR_MAP = {
@@ -275,8 +316,17 @@ def build_concepts_section(summary):
     return "\n".join(lines)
 
 
-def build_video_note(metadata, transcript, summary, timestamp):
-    """Build complete markdown note for video."""
+def build_video_note(metadata, transcript, summary, timestamp, snippets=None):
+    """Build complete markdown note for video. `snippets` (timed transcript)
+    adds a collapsed, clickable-timestamp transcript section; "My Notes" is
+    left for the user."""
+    timed = timed_transcript_md(snippets, metadata["url"])
+    if timed:
+        transcript_section = timed
+    elif transcript:
+        transcript_section = f"> [!note]- Transcript (excerpt)\n> {transcript[:3000]}"
+    else:
+        transcript_section = "<!-- No transcript available -->"
     creator = detect_creator(metadata["channel"])
 
     frontmatter = f"""---
@@ -343,10 +393,13 @@ reviewed: false
 {topics}
 
 ## My Notes
-{transcript[:1000] if transcript else '<!-- Add your notes here -->'}
+<!-- Add your notes here -->
 
 ## Action Items
 {action_items}
+
+## Transcript
+{transcript_section}
 
 ## Takeaways
 <!-- What I personally found most useful -->
@@ -397,7 +450,10 @@ def process_youtube_url(url, timestamp=None):
     print(f"  [YouTube] Channel: {metadata['channel']}")
 
     # Fetch transcript
-    transcript = fetch_transcript(video_id)
+    snippets = fetch_snippets(video_id)
+    transcript = transcript_text(snippets)
+    if transcript:
+        print(f"  [YouTube] Transcript fetched: {len(snippets)} segments")
 
     # Detect creator
     creator_folder = detect_creator(metadata["channel"])
@@ -409,7 +465,7 @@ def process_youtube_url(url, timestamp=None):
         print("  [YouTube] AI summary failed, using basic template")
 
     # Build markdown
-    markdown = build_video_note(metadata, transcript, summary, timestamp)
+    markdown = build_video_note(metadata, transcript, summary, timestamp, snippets)
 
     # Determine folder path
     if summary and summary.get("folder_path"):
