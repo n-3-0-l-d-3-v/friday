@@ -550,6 +550,28 @@ def curate_knowledge_base(apply: bool = False) -> str:
     return f"{header}\n" + "\n".join(lines) + f"\n\nNext: {result['next']}"
 
 
+@server.tool(description="Tick a habit (deepwork, dsa, workout, music, writing, or any lowercase name) in today's LifeOS daily note; returns the current streak.")
+def log_habit(habit: str, done: bool = True) -> str:
+    from friday import lifeos
+    from friday.config import REPO_PATH
+
+    try:
+        lifeos.set_habit(REPO_PATH, habit.lower(), done)
+    except lifeos.LifeOSError as exc:
+        return f"Error: {exc}"
+    return f"{habit}: {'done' if done else 'not done'} today; streak {lifeos.streaks(REPO_PATH, habits=(habit.lower(),))[habit.lower()]} day(s)"
+
+
+@server.tool(description="Create today's daily note if missing and report habit streaks.")
+def today() -> str:
+    from friday import lifeos
+    from friday.config import REPO_PATH
+
+    path, created = lifeos.ensure_today(REPO_PATH)
+    streak = ", ".join(f"{h} {n}" for h, n in lifeos.streaks(REPO_PATH).items())
+    return f"{'Created' if created else 'Existing'} {path.name}. Streaks: {streak}"
+
+
 def main():
     server.run(transport="stdio")
 

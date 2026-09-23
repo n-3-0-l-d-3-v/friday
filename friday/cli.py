@@ -312,6 +312,33 @@ def portfolio_cmd(out, name):
     path.write_text(portfolio.render(s, name), encoding="utf-8")
     click.echo(f"Wrote {path} (host free with GitHub Pages)")
 
+@cli.command(name="lifeos")
+def lifeos_cmd():
+    """Create today's LifeOS daily note from the vault template (if missing) and show streaks."""
+    from friday import lifeos
+    from friday.config import REPO_PATH
+
+    path, created = lifeos.ensure_today(REPO_PATH)
+    click.echo(("Created " if created else "Exists  ") + str(path))
+    for habit, n in lifeos.streaks(REPO_PATH).items():
+        click.echo(f"  {habit:10s} {n} day streak")
+
+
+@cli.command(name="habit")
+@click.argument("name")
+@click.option("--undo", is_flag=True, help="Mark it not done today.")
+def habit_cmd(name, undo):
+    """Tick a habit in today's daily note (deepwork, dsa, workout, music, writing, or your own)."""
+    from friday import lifeos
+    from friday.config import REPO_PATH
+
+    try:
+        lifeos.set_habit(REPO_PATH, name.lower(), not undo)
+    except lifeos.LifeOSError as exc:
+        raise click.ClickException(str(exc))
+    click.echo(f"{name}: {'not done' if undo else 'done'} today. Streak: {lifeos.streaks(REPO_PATH, habits=(name.lower(),))[name.lower()]} day(s)")
+
+
 @cli.command(name="push")
 def push_cmd():
     """Push any locally-committed notes to GitHub (use after 'friday note --no-push')."""
