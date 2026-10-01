@@ -192,6 +192,47 @@ def test_health_reports_missing_keys(monkeypatch):
     assert "no API key" in report["groq"]["error"]
 
 
+def test_health_slow_provider_times_out_without_blocking(monkeypatch):
+    import time
+    monkeypatch.setattr(AI, "HEALTH_PROBE_TIMEOUT", 0.3)
+    monkeypatch.setattr(AI, "GEMINI_API_KEY", "k", raising=False)
+    monkeypatch.setattr(AI, "GROQ_API_KEY", "k", raising=False)
+    monkeypatch.setattr(AI, "_try_gemini", lambda p, m, t: time.sleep(5))
+    monkeypatch.setattr(AI, "_try_groq", lambda p, m, t: "OK")
+    start = time.monotonic()
+    report = AI.health()
+    assert time.monotonic() - start < 1.5
+    assert "exceeded" in report["gemini"]["error"] and report["groq"]["ok"] is True
+
+
+class _Resp:
+    def __init__(self, body): self.body = body
+    def read(self): return self.body
+    def __enter__(self): return self
+    def __exit__(self, *a): return False
+
+
+def test_ollama_ready_checks_pulled_model_without_a_completion(monkeypatch):
+    import json
+    import urllib.request
+    calls = []
+
+    def fake(url, timeout=None):
+        calls.append(url)
+        return _Resp(json.dumps({"models": [{"name": AI.OLLAMA_MODEL}]}).encode())
+    monkeypatch.setattr(urllib.request, "urlopen", fake)
+    assert AI._ollama_ready()["ok"] is True
+    assert calls == [f"{AI.OLLAMA_HOST}/api/tags"]  # no /api/chat: nothing gets loaded
+
+    monkeypatch.setattr(urllib.request, "urlopen", lambda url, timeout=None: _Resp(b'{"models": []}'))
+    assert "not pulled" in AI._ollama_ready()["error"]
+
+    def down(url, timeout=None):
+        raise OSError("refused")
+    monkeypatch.setattr(urllib.request, "urlopen", down)
+    assert "not reachable" in AI._ollama_ready()["error"]
+
+
 # --- config ----------------------------------------------------------------
 def test_model_lists_are_non_empty_lists():
     """Guards against someone regressing these back to bare strings."""

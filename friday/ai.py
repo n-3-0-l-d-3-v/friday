@@ -317,30 +317,51 @@ def transcribe(audio_path):
 HEALTH_PROBE_TIMEOUT = 5.0
 
 
-def health():
-    """Probe each provider with a trivial prompt (in parallel). Used by `friday doctor` and `--health`."""
-    from concurrent.futures import ThreadPoolExecutor
+def _ollama_ready():
+    """Cheap local check: server up and OLLAMA_MODEL pulled (/api/tags). Does NOT
+    run a completion -- that would load a multi-GB model just to answer a health
+    check (slow, and undoes `wall-e focus on`, which unloads models)."""
+    import urllib.request
 
+    try:
+        with urllib.request.urlopen(f"{OLLAMA_HOST}/api/tags", timeout=HEALTH_PROBE_TIMEOUT) as resp:
+            names = {m.get("name", "") for m in json.loads(resp.read()).get("models", [])}
+    except Exception as exc:  # noqa: BLE001
+        return {"ok": False, "model": None, "error": f"Ollama not reachable at {OLLAMA_HOST}: {str(exc)[:120]}"}
+    names |= {n.removesuffix(":latest") for n in names}
+    if OLLAMA_MODEL not in names:
+        return {"ok": False, "model": None, "error": f"{OLLAMA_MODEL} not pulled (ollama pull {OLLAMA_MODEL})"}
+    return {"ok": True, "model": OLLAMA_MODEL, "error": ""}
+
+
+def health():
+    """Probe each provider in parallel. Cloud providers get a trivial prompt;
+    Ollama gets a no-load readiness check. Used by `friday doctor` and `--health`."""
     probe = "Reply with the single word: OK"
+    report = {}
 
     def _probe(name, key, fn):
         if not key:
-            return name, {"ok": False, "model": None, "error": "no API key"}
+            report[name] = {"ok": False, "model": None, "error": "no API key"}
+            return
         text = fn(probe, 16, 0.0)
-        return name, {"ok": bool(text), "model": _working[name], "error": "" if text else _last_error[name]}
+        report[name] = {"ok": bool(text), "model": _working[name], "error": "" if text else _last_error[name]}
 
-    pool = ThreadPoolExecutor(max_workers=3)
-    futures = {"gemini": pool.submit(_probe, "gemini", GEMINI_API_KEY, _try_gemini),
-               "groq": pool.submit(_probe, "groq", GROQ_API_KEY, _try_groq)}
+    jobs = {"gemini": lambda: _probe("gemini", GEMINI_API_KEY, _try_gemini),
+            "groq": lambda: _probe("groq", GROQ_API_KEY, _try_groq)}
     if OLLAMA_ENABLED:
-        futures["ollama"] = pool.submit(_probe, "ollama", True, _try_ollama)
-    report = {}
-    for name, fut in futures.items():
-        try:
-            report[name] = fut.result(timeout=HEALTH_PROBE_TIMEOUT)[1]
-        except Exception:  # noqa: BLE001 - timeout or probe crash: report, never hang
-            report[name] = {"ok": False, "model": None, "error": f"probe exceeded {HEALTH_PROBE_TIMEOUT}s"}
-    pool.shutdown(wait=False)  # a slow provider must not block the health report
-
-    report["any"] = any(v["ok"] for v in report.values())
-    return report
+        jobs["ollama"] = lambda: report.__setitem__("ollama", _ollama_ready())
+    # Daemon threads: a slow provider can neither delay this report nor keep
+    # the process alive at exit (ThreadPoolExecutor workers are joined at
+    # interpreter shutdown, which made `friday --health` take ~20s).
+    threads = {name: threading.Thread(target=fn, daemon=True) for name, fn in jobs.items()}
+    for t in threads.values():
+        t.start()
+    deadline = time.monotonic() + HEALTH_PROBE_TIMEOUT
+    for name, t in threads.items():
+        t.join(max(0.0, deadline - time.monotonic()))
+    final = {}
+    for name in jobs:
+        final[name] = report.get(name) or {"ok": False, "model": None, "error": f"probe exceeded {HEALTH_PROBE_TIMEOUT}s"}
+    final["any"] = any(v["ok"] for v in final.values())
+    return final
