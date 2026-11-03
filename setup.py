@@ -15,7 +15,7 @@ setup(
         "uvicorn>=0.29.0",
         "youtube-transcript-api>=0.6.2",
         "discord.py>=2.3.0",
-        "mcp>=2.0.0",
+        "mcp>=2.0.0,<3",
         "sounddevice>=0.4.6",
         "numpy>=1.24.0",
         "pyyaml>=6.0",
